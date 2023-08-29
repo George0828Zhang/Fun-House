@@ -1,4 +1,4 @@
-# GTAVYimmenuScripts
+# Fun House (Yimmenu)
 
 Some Yimmenu scripts I made (for research & fun purposes).
 
@@ -7,16 +7,16 @@ Some Yimmenu scripts I made (for research & fun purposes).
 <img src="demolition.png" alt="drawing" width="250"/>
 
 - Self->Weapons tab.
-- Replaces your sticky bombs with demolition charge in heists.
+- Replaces your sticky bombs with demolition charges from heists.
 - Object model & explosion type configurable. 
 - Would recommend Self->Weapons->Increase Sticky Limit to 50.
 
 ### WeaponAddons
 
 - Self->Weapons tab.
-- Fire Ammo: enables the fireammo cheat from SP.
+- Fire Ammo: enable the fireammo cheat from SP.
 - Gangsta Aim: enable gangsta aim with vanilla pistol (only).
-- Anti-Vehicle Gun: shoot once to kill engine of any vehicle. (= yimmenu's context menu option but automatic)
+- Anti-Vehicle Gun: shoot once to kill engine of any vehicle. (= context menu->killengine, but automatic)
 
 ### Wolverine
 - Self tab.
