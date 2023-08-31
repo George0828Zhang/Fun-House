@@ -47,16 +47,3 @@ script.register_looped("wolverineloops", function (script)
 		_frame = (_frame + 1) % _max_frame_count
 	end
 end)
-
-
--- debug = gui.add_tab("debug")
--- text = debug:add_text("0")
--- debug:add_button("Check", function()
--- 	local playerPed = PLAYER.PLAYER_PED_ID()
--- 	local x = ENTITY.GET_ENTITY_HEALTH(playerPed)
--- 	local y = ENTITY.GET_ENTITY_MAX_HEALTH(playerPed)
--- 	local z = PED.GET_PED_ARMOUR(playerPed)
---     text:set_text("Health="..tostring(x).."/"..tostring(y).."("..tostring(z)..")")
--- 	text:set_text("Me="..tostring(PLAYER.PLAYER_ID()))
--- 	command.call("killengine", {PLAYER.PLAYER_ID()})
--- end)

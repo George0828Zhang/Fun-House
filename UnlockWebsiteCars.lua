@@ -16,3 +16,8 @@ Tab:add_button("Unlock Website Cars", function()
         globals.set_int(262145 + i, 1)
     end
 end)
+event.register_handler(menu_event.PlayerMgrInit, function ()
+    for _, i in pairs(vehlist) do
+        globals.set_int(262145 + i, 1)
+    end
+end)

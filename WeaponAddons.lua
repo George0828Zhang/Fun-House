@@ -3,7 +3,7 @@ local Tab = gui.get_tab(tabName)
 local antivehCB = false
 
 local gangstaCB = true
-local gangsta_active = gangsta_active
+local gangsta_active = false
 
 local fireammoCB = true
 local fireammoVer = 1  -- 1=lightup peds & vehicles  2=only lightup peds
@@ -26,6 +26,14 @@ Tab:add_imgui(function()
 
     ImGui.SameLine()
     fireammoCB, _Toggled3 = ImGui.Checkbox("Fire Ammo", fireammoCB)
+end)
+
+event.register_handler(menu_event.PlayerMgrInit, function ()
+    if gangsta_active then
+        WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Gang1H"))
+    else
+        WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Default"))
+    end
 end)
 
 function GET_PLAYER_INDEX_FROM_PED(ped)
