@@ -5,7 +5,7 @@ local antivehCB = false
 local gangstaCB = true
 local gangsta_active = false
 
-local fireammoCB = true
+local fireammoCB = false
 local fireammoVer = 1  -- 1=lightup peds & vehicles  2=only lightup peds
 
 Tab:add_imgui(function()
@@ -15,25 +15,8 @@ Tab:add_imgui(function()
     ImGui.SameLine()
     gangstaCB, _Toggled2 = ImGui.Checkbox("Gangsta Aim", gangstaCB)
 
-    if gangsta_active ~= gangstaCB then
-        gangsta_active = gangstaCB
-        if gangsta_active then
-            WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Gang1H"))
-        else
-            WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Default"))
-        end
-    end
-
     ImGui.SameLine()
     fireammoCB, _Toggled3 = ImGui.Checkbox("Fire Ammo", fireammoCB)
-end)
-
-event.register_handler(menu_event.PlayerMgrInit, function ()
-    if gangsta_active then
-        WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Gang1H"))
-    else
-        WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Default"))
-    end
 end)
 
 function GET_PLAYER_INDEX_FROM_PED(ped)
@@ -88,13 +71,29 @@ script.register_looped("fireammoloop", function (sc)
     if fireammoCB then
         if fireammoVer == 1 then
             MISC.SET_FIRE_AMMO_THIS_FRAME(player)
-            sc:sleep(10)
         elseif PLAYER.IS_PLAYER_FREE_AIMING(player) then
             local has_ent, entity = PLAYER.GET_ENTITY_PLAYER_IS_FREE_AIMING_AT(player, entity)        
             if has_ent and ENTITY.IS_ENTITY_A_PED(entity) and not PED.IS_PED_IN_ANY_VEHICLE(entity, false) then
                 MISC.SET_FIRE_AMMO_THIS_FRAME(PLAYER.PLAYER_ID())
-                sc:sleep(10)
             end
         end
+    end
+end)
+
+script.register_looped("gangstaloop", function (sc)
+    sc:yield() -- necessary numbers to update
+    local player = PLAYER.PLAYER_ID()
+    local playerPed = PLAYER.PLAYER_PED_ID()
+    if PLAYER.IS_PLAYER_PLAYING(player) and playerPed ~= nil and ENTITY.DOES_ENTITY_EXIST(playerPed) then
+        if gangsta_active ~= gangstaCB then
+            gangsta_active = gangstaCB
+            if gangsta_active then
+                WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Gang1H"))
+            else
+                WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(PLAYER.PLAYER_PED_ID(), joaat("Default"))
+            end
+        end
+    else
+        gangsta_active = false
     end
 end)

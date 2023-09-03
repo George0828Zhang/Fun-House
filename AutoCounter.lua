@@ -8,6 +8,8 @@ local projectile_names = {
     -- "w_smug_airmissile_01b",
     -- "w_smug_airmissile_02b",
     -- "h4_prop_h4_airmissile_01a" -- kosatka maybe
+    -- -- apc & pounder c (no lockon)
+    -- "w_ex_vehiclemissile_2",
 
     -- strikeforce
     "w_battle_airmissile_01",
@@ -19,29 +21,27 @@ local projectile_names = {
     "w_smug_airmissile_02",
     -- oppressor 1 and 2, stromberg, toreador, deluxo, vigilante, thruster, scramjet
     "w_ex_vehiclemissile_3",
-    -- -- apc & pounder c
-    -- "w_ex_vehiclemissile_2",
-    -- -- aa trailer
-    -- "w_ex_vehiclemissile_1",
-    -- -- chernobog
-    -- "w_ex_vehiclemissile_4",
+    -- aa trailer
+    "w_ex_vehiclemissile_1",
+    -- chernobog
+    "w_ex_vehiclemissile_4",
 }
 local projectiles = {}
 for _, name in pairs(projectile_names) do
     projectiles[name] = joaat(name)
 end
 local flare_hash = joaat("WEAPON_FLAREGUN")
-local flare_orig = vec3:new(0,-10,0)
+local flare_orig = vec3:new(0,0,0)
 local flare_dests = {
-    vec3:new(0,0,5),
-    vec3:new(5,0,-5),
-    vec3:new(-5,0,-5),
+    vec3:new(0,10,5),
+    vec3:new(0,10,-5),
 
-    vec3:new(0,-20,-5),
-    vec3:new(5,-20,5),
-    vec3:new(-5,-20,5),
+    vec3:new(5,-10,-1),
+    vec3:new(-5,-10,-1),
 }
-local counter_range = 100
+local flare_interval_ms = 300
+local counter_range = 200
+local invisible = false
 
 function is_approaching(playerPed, pl_coords, proj)
     local pl_vel = ENTITY.GET_ENTITY_VELOCITY(playerPed)
@@ -60,11 +60,11 @@ function is_approaching(playerPed, pl_coords, proj)
     return speed > 2 --or speed < -2
 end
 function deploy_once(sc, playerPed)
-    local offset_orig = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(
-        playerPed, flare_orig.x, flare_orig.y, flare_orig.z)
     WEAPON.REQUEST_WEAPON_ASSET(flare_hash, 31, 0)
     while not WEAPON.HAS_WEAPON_ASSET_LOADED(flare_hash) do sc:yield() end
     for _, flare_dest in pairs(flare_dests) do
+        local offset_orig = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(
+            playerPed, flare_orig.x, flare_orig.y, flare_orig.z)
         local offset_dest = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(
             playerPed, flare_dest.x, flare_dest.y, flare_dest.z)
         MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY(
@@ -74,7 +74,8 @@ function deploy_once(sc, playerPed)
             offset_dest.x,
             offset_dest.y,
             offset_dest.z,
-            25, false, flare_hash, playerPed, true, false, 0.1, playerPed, 0) 
+            25, false, flare_hash, playerPed, true, invisible, 0.1, playerPed, 0)
+        sc:sleep(flare_interval_ms)
     end
 end
 
@@ -100,9 +101,8 @@ script.register_looped("counterloop", function (sc)
         end
     end
     -- check each seconds
-    sc:sleep(1000)
+    sc:sleep(flare_interval_ms)
 end)
-
 
 -- local myTab = gui.get_tab("Debug")
 -- myTab:add_button("shoot self", function()
@@ -121,5 +121,6 @@ end)
 --             offset_dest.x,
 --             offset_dest.y,
 --             offset_dest.z,
---     100, false, weap_hash, playerPed, true, false, 300.0, nil, false, false, playerPed, false, 0, 0, 0) 
+--     100, false, weap_hash, playerPed, true, false, 2000, nil, false, false, playerPed, false, 0, 0, 0) 
 -- end)
+
