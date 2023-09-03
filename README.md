@@ -3,6 +3,16 @@
 Some Yimmenu scripts I made (for research & fun purposes).
 
 ## Mods
+### Freight
+- Vehicle tab.
+- Spawn a freight to drive on the street.
+
+### AutoCounter
+- Auto shoots flares countermeasure from any vehicle when missiles approach.
+
+### Jet Cannon
+- Auto bypasses the lazer/hydra cannon nerf from mercernaries dlc.
+
 ### CustomStickyBombs
 <img src="demolition.png" alt="drawing" width="250"/>
 
@@ -30,6 +40,7 @@ Some Yimmenu scripts I made (for research & fun purposes).
 ### Reports
 - Network->Reports tab.
 - Show/clear player reports.
+
 
 ### (WIP) Thermal
 - Self->Weapons tab
