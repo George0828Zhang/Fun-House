@@ -16,13 +16,22 @@ local _max_frame_count = 2147483646
 Tab:add_imgui(function()
 	ImGui.Text("Extras")
 	settings.headshot_pf, _Toggled3 = ImGui.Checkbox("Heatshot Proof", settings.headshot_pf)
-	ImGui.Text("Regeneratives: Two numbers x, y --> regenerate x points per y frames")
+	ImGui.Text("Regeneratives")
     settings.heal_enable, _Toggled1 = ImGui.Checkbox("Health", settings.heal_enable)
 	ImGui.SameLine()
 	settings.heal_rate, _used1 = ImGui.SliderInt2("Regen Rate", settings.heal_rate, 1, 50)
+
+	if ImGui.IsItemHovered() then
+        ImGui.SetTooltip("Regenerate number1 amount of health for every number2 frames.")
+    end
+
     settings.armour_enable, _Toggled2 = ImGui.Checkbox("Armour", settings.armour_enable)
 	ImGui.SameLine()
 	settings.armour_rate, _used2 = ImGui.SliderInt2("Repair Rate", settings.armour_rate, 1, 50)
+	
+	if ImGui.IsItemHovered() then
+        ImGui.SetTooltip("Regain number1 amount of armour for every number2 frames.")
+    end
 end)
 
 script.register_looped("wolverineloops", function (script)

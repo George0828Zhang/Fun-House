@@ -41,13 +41,12 @@ Some Yimmenu scripts I made (for research & fun purposes).
 - Network->Reports tab.
 - Show/clear player reports.
 
-
-### (WIP) Thermal
+### Thermal
 - Self->Weapons tab
-- Turn on/off thermal with E when aiming any gun (just like mk2 sniper). 
-- Currently only works when you equip quad lens and turn it on first. If you know how to bypass MP thermal block pls lemme know.
+- Turn on/off thermal with E when aiming any gun (just like mk2 sniper).
 
 ## Credits & Reference
 - [Yimmenu](https://github.com/YimMenu/YimMenu)
 - [UnknownCheats (globals & locals)](https://www.unknowncheats.me/forum/grand-theft-auto-v/500059-globals-locals-discussion-read-page-1-a.html)
+- [GTA5TunersGenZ (thermal bypass)](https://www.unknowncheats.me/forum/downloads.php?do=file&id=41096)
 - [NativeDB](https://alloc8or.re/gta5/nativedb/)

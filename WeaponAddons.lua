@@ -11,9 +11,15 @@ local fireammoVer = 1  -- 1=lightup peds & vehicles  2=only lightup peds
 Tab:add_imgui(function()
     ImGui.Text("Extras")
     antivehCB, _Toggled = ImGui.Checkbox("Anti-Vehicle Gun", antivehCB)
+    if ImGui.IsItemHovered() then
+        ImGui.SetTooltip("Kill engine of any vehicle in 1 shot. Does not work if target has modder protection.")
+    end
     
     ImGui.SameLine()
     gangstaCB, _Toggled2 = ImGui.Checkbox("Gangsta Aim", gangstaCB)
+    if ImGui.IsItemHovered() then
+        ImGui.SetTooltip("Shoot the pistol or pistol mk2 like a gangsta.")
+    end
 
     ImGui.SameLine()
     fireammoCB, _Toggled3 = ImGui.Checkbox("Fire Ammo", fireammoCB)
