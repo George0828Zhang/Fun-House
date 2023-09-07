@@ -44,19 +44,26 @@ local counter_range = 200
 local invisible = false
 
 function is_approaching(playerPed, pl_coords, proj)
-    local pl_vel = ENTITY.GET_ENTITY_VELOCITY(playerPed)
     local proj_coords = ENTITY.GET_ENTITY_COORDS(proj)
     local proj_vel = ENTITY.GET_ENTITY_VELOCITY(proj)
 
     local d_x = pl_coords.x - proj_coords.x
     local d_y = pl_coords.y - proj_coords.y
     local d_z = pl_coords.z - proj_coords.z
-    local delta = SYSTEM.VMAG(d_x, d_y, d_z)
-
     local proj_speed = proj_vel.x * d_x + proj_vel.y * d_y + proj_vel.z * d_z
+    if proj_speed <= 0 then
+        return false
+    end
+
+    local delta = SYSTEM.VMAG(d_x, d_y, d_z)
+    if delta <= 2 then -- self fired / too late
+        return false
+    end
+
+    local pl_vel = ENTITY.GET_ENTITY_VELOCITY(playerPed)
     local rel_speed  = proj_speed - (pl_vel.x * d_x + pl_vel.y * d_y + pl_vel.z * d_z)
 
-    return proj_speed > 0 and rel_speed > 2 * delta -- x/d > 2
+    return rel_speed > 2 * delta -- x/d > 2
 end
 function deploy_once(sc, playerPed)
     WEAPON.REQUEST_WEAPON_ASSET(flare_hash, 31, 0)
