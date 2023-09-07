@@ -1,18 +1,5 @@
--- Thermal Bypass credits: GTA5TunersGenZ https://www.unknowncheats.me/forum/downloads.php?do=file&id=41096
-local thermalCB = true
-local Tab = gui.get_tab("GUI_TAB_WEAPONS")
-
-function render_thermal_option()
-    thermalCB, thermalToggled = ImGui.Checkbox("Thermal Control", thermalCB)
-    if ImGui.IsItemHovered() then
-        -- ImGui.BeginTooltip()
-        ImGui.SetTooltip("Toggle thermal vision by pressing E when aiming any weapon.")
-        -- ImGui.EndTooltip()
-    end
-    ImGui.SameLine()
-end
-
-Tab:add_imgui(render_thermal_option)
+-- Thermal Bypass credits: GTA5TunersGenZ
+-- https://www.unknowncheats.me/forum/downloads.php?do=file&id=41096
 
 local PED_FLAG_IS_SNIPER_SCOPE_ACTIVE = 72
 local PED_FLAG_IS_AIMING = 78
@@ -20,7 +7,7 @@ script.register_looped("loops", function (sc)
     -- sleep until next game frame
     sc:yield()
     
-    if thermalCB and PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), PED_FLAG_IS_AIMING, 1) and PAD.IS_CONTROL_PRESSED(0, 54) then
+    if PED.GET_PED_CONFIG_FLAG(PLAYER.PLAYER_PED_ID(), PED_FLAG_IS_AIMING, 1) and PAD.IS_CONTROL_PRESSED(0, 54) then
         GRAPHICS.SEETHROUGH_SET_MAX_THICKNESS(9999.0)
         GRAPHICS.SEETHROUGH_SET_NOISE_MIN(0.0)
         GRAPHICS.SEETHROUGH_SET_NOISE_MAX(0.0)
