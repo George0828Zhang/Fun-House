@@ -96,6 +96,168 @@ function handle_enum(name, value)
             PROJECTILE = 4,
             VOLUMETRIC_PARTICLE = 5
         }
+    elseif name == "WeaponFlags" then
+        tabl = {
+            CarriedInHand = 0,
+            Automatic = 1,
+            Silenced = 2,
+            FirstPersonScope = 3,
+            ArmourPenetrating = 4,
+            ApplyBulletForce = 5,
+            Gun = 6,
+            CanLockonOnFoot = 7,
+            CanLockonInVehicle = 8,
+            Homing = 9,
+            CanFreeAim = 10,
+            Heavy = 11,
+            TwoHanded = 12,
+            Launched = 13,
+            MeleeBlade = 14,
+            MeleeClub = 15,
+            AnimReload = 16,
+            AnimCrouchFire = 17,
+            CreateVisibleOrdnance = 18,
+            TreatAsOneHandedInCover = 19,
+            H_0x433706FF = 20,
+            Thrown = 21,
+            Bomb = 22,
+            UsableOnFoot = 23,
+            UsableUnderwater = 24,
+            UsableClimbing = 25,
+            UsableInCover = 26,
+            AllowEarlyExitFromFireAnimAfterBulletFired = 27,
+            DisableRightHandIk = 28,
+            DisableLeftHandIkInCover = 29,
+            DontSwapWeaponIfNoAmmo = 30,
+            H_0xFF2EED4F = 31,
+            DoesRevivableDamage = 32,
+            NoFriendlyFireDamage = 33,
+            Detonator = 34,
+            DisplayRechargeTimeHUD = 35,
+            OnlyFireOneShot = 36,
+            OnlyFireOneShotPerTriggerPress = 37,
+            UseLegDamageVoice = 38,
+            H_0x6913F3A8 = 39,
+            CanBeFiredLikeGun = 40,
+            OnlyAllowFiring = 41,
+            NoLeftHandIK = 42,
+            NoLeftHandIKWhenBlocked = 43,
+            H_0x94214125 = 44,
+            H_0x1D00ABC3 = 45,
+            Vehicle = 46,
+            EnforceAimingRestrictions = 47,
+            ForceEjectShellAfterFiring = 48,
+            NonViolent = 49,
+            NonLethal = 50,
+            Scary = 51,
+            AllowCloseQuarterKills = 52,
+            DisablePlayerBlockingInMP = 53,
+            StaticReticulePosition = 54,
+            CanPerformArrest = 55,
+            H_0xF1DA2249 = 56,
+            AllowMeleeIntroAnim = 57,
+            ManualDetonation = 58,
+            SuppressGunshotEvent = 59,
+            HiddenFromWeaponWheel = 60,
+            AllowDriverLockOnToAmbientPeds = 61,
+            NeedsGunCockingInCover = 62,
+            ThrowOnly = 63,
+            NoAutoRunWhenFiring = 64,
+            DisableIdleVariations = 65,
+            HasLowCoverReloads = 66,
+            HasLowCoverSwaps = 67,
+            DontBreakRopes = 68,
+            CookWhileAiming = 69,
+            UseLeftHandIkWhenAiming = 70,
+            DropWhenCooked = 71,
+            NotAWeapon = 72,
+            RemoveEarlyWhenEnteringVehicles = 73,
+            DontBlendFireOutro = 74,
+            DiscardWhenOutOfAmmo = 75,
+            DelayedFiringAfterAutoSwap = 76,
+            EnforceFiringAngularThreshold = 77,
+            ForcesActionMode = 78,
+            CreatesAPotentialExplosionEventWhenFired = 79,
+            CreateBulletExplosionWhenOutOfTime = 80,
+            DelayedFiringAfterAutoSwapPreviousWeapon = 81,
+            DisableCombatRoll = 82,
+            NoWheelStats = 83,
+            ProcessGripAnim = 84,
+            DisableStealth = 85,
+            DangerousLookingMeleeWeapon = 86,
+            QuitTransitionToIdleIntroOnWeaponChange = 87,
+            DisableLeftHandIkWhenOnFoot = 88,
+            IgnoreHelmets = 89,
+            Rpg = 90,
+            NoAmmoDisplay = 91,
+            TorsoIKForWeaponBlock = 92,
+            LongWeapon = 93,
+            H_0xAF443B5F = 94,
+            H_0xE3C63C3B = 95,
+            H_0x1E3D23FF = 96,
+            AssistedAimVehicleWeapon = 97,
+            CanBlowUpVehicleAtZeroBodyHealth = 98,
+            IgnoreAnimReloadRateModifiers = 99,
+            DisableIdleAnimationFilter = 100,
+            H_0x7B27E96A = 101,
+            H_0xBDBBC7FE = 102,
+            HomingToggle = 103,
+            ApplyVehicleDamageToEngine = 104,
+            Turret = 105,
+            DisableAimAngleChecksForReticule = 106,
+            AllowMovementDuringFirstPersonScope = 107,
+            DriveByMPOnly = 108,
+            H_0xD5E173D6 = 109,
+            CreateWeaponWithNoModel = 110,
+            RemoveWhenUnequipped = 111,
+            BlockAmbientIdles = 112,
+            NotUnarmed = 113,
+            UseFPSAimIK = 114,
+            DisableFPSScope = 115,
+            DisableFPSAimForScope = 116,
+            EnableFPSRNGOnly = 117,
+            EnableFPSIdleOnly = 118,
+            MeleeHatchet = 119,
+            UseAlternateFPDrivebyClipset = 120,
+            AttachFPSLeftHandIKToRight = 121,
+            OnlyUseAimingInfoInFPS = 122,
+            UseFPSAnimatedRecoil = 123,
+            UseFPSSecondaryMotion = 124,
+            HasFPSProjectileWeaponAnims = 125,
+            AllowMeleeBlock = 126,
+            DontPlayDryFireAnim = 127,
+            SwapToUnarmedWhenOutOfThrownAmmo = 128,
+            PlayOutOfAmmoAnim = 129,
+            DisableIdleAnimationFilterWhenReloading = 130,
+            OnFootHoming = 131,
+            DamageCausesDisputes = 132,
+            UsePlaneExplosionDamageCapInMP = 133,
+            FPSOnlyExitFireAnimAfterRecoilEnds = 134,
+            SkipVehiclePetrolTankDamage = 135,
+            DontAutoSwapOnPickUp = 136,
+            DisableTorsoIKAboveAngleThreshold = 137,
+            MeleeFist = 138,
+            NotAllowedForDriveby = 139,
+            AttachReloadObjectToRightHand = 140,
+            CanBeAimedLikeGunWithoutFiring = 141,
+            MeleeMachete = 142,
+            HideReticule = 143,
+            UseHolsterAnimation = 144,
+            BlockFirstPersonStateTransitionWhileFiring = 145,
+            ForceFullFireAnimation = 146,
+            DisableLeftHandIkInDriveby = 147,
+            CanUseInVehMelee = 148,
+            UseVehicleWeaponBoneForward = 149,
+            UseManualTargetingMode = 150,
+            IgnoreTracerVfxMuzzleDirectionCheck = 151,
+            IgnoreHomingCloseThresholdCheck = 152,
+            LockOnRequiresAim = 153,
+            DisableCameraPullAround = 154,
+            VehicleChargedLaunch = 155,
+            ForcePedAsFiringEntity = 156,
+            FiringEntityIgnoresExplosionDamage = 157,
+            IncendiaryGuaranteedChance = 161,
+        }
     else
         tabl = {}
     end
@@ -118,7 +280,7 @@ function parse_into_gta_form(itemtype, vpack)
             -- <AmmoInfo ref="AMMO_SHOTGUN" /> -- need to handle directly
             ClipSize={0x0070, "int"},
             Damage={0x00B0, "float"},
-            -- WeaponFlags={0x0900, "flags"}
+            WeaponFlags={0x0900, "flags192"}
         },
     }
     local out = nil
@@ -135,6 +297,17 @@ function parse_into_gta_form(itemtype, vpack)
             value = handle_enum(vpack.label, value)
         elseif tp == "int" then
             value = tonumber(value)
+        elseif tp == "flags192" or tp == "flags32" then
+            bits = {}
+            for w in value:gmatch("%S+") do
+                table.insert(bits, handle_enum(vpack.label, w))
+            end
+            value = bits
+            if tp == "flags192" then
+                gta = "bitset192"
+            else
+                gta = "bitset"
+            end
         else
             value = tonumber(value)
             gta = "float"
@@ -143,6 +316,7 @@ function parse_into_gta_form(itemtype, vpack)
     end
     return out
 end
+
 function transform(meta)
     -- transform table into efficient lookup    
     local lookup = {
@@ -205,6 +379,18 @@ function apply_weapons_meta(script, lookup, curr_weap)
             wpn_field_addr:set_qword(v.val)
         elseif v.gtatype == "string" then
             wpn_field_addr:set_string(v.val)
+        elseif v.gtatype == "bitset192" then
+            local bitset64s = {0, 0, 0}
+            for _, b in pairs(v.val) do
+                local q = b // 64 + 1 -- lua 1-indexed
+                local r = b % 64
+                log.info("[debug][wpn_info][flags] bit="..tostring(b))
+                bitset64s[q] = bitset64s[q] | (1 << r)
+            end
+            -- log.info("[debug][wpn_info][flags] bitset1="..tostring(bitset64s[1]))
+            wpn_field_addr:set_qword(bitset64s[1])
+            wpn_field_addr:add(8):set_qword(bitset64s[2])
+            wpn_field_addr:add(16):set_qword(bitset64s[3])
         end
         log.info("[debug][wpn_info] Applied "..tostring(v.val).." at "..string.format("0x%x", v.offset))
     end
