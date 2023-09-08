@@ -10,7 +10,7 @@ require("lib/gtaenums")
 require("lib/gtaoffsets")
 require("weaponsmeta")
 
-function handle_enum(name, value)
+function _handle_enum(name, value)
     if name == "DamageType" then
         return eDamageType[value]
     elseif string.sub(name,1,string.len("Explosion")) == "Explosion" then
@@ -21,7 +21,20 @@ function handle_enum(name, value)
         return eEffectGroup[value]
     elseif name == "WeaponFlags" then
         return eWeaponFlags[value]
+    elseif name == "AmmoSpecialType" then
+        return eAmmoSpecialType[value]
+    elseif name == "AmmoFlags" then
+        return eAmmoFlags[value]
+    elseif name == "ProjectileFlags" then
+        return eProjectileFlags[value]
     end
+end
+function handle_enum(name, value)
+    local out = _handle_enum(name, value)
+    if out == nil then
+        log.info("[debug][enum] Unseen enum/flag: "..value.." in "..name)
+    end
+    return out
 end
 
 function parse_into_gta_form_recursive(offset_table, out_table, value_pack, parent_tag)
@@ -73,6 +86,9 @@ function parse_into_gta_form_recursive(offset_table, out_table, value_pack, pare
                     gtatype="float",
                     val=tonumber(value_pack.xarg.z)
                 })
+            elseif typ == "ref" then
+                value = joaat(value_pack.xarg.ref)
+                gta = "ref"
             else
                 value = tonumber(value)
                 gta = "float"            
@@ -89,28 +105,40 @@ function parse_into_gta_form_recursive(offset_table, out_table, value_pack, pare
 end
 
 function transform(meta)
-    -- transform table into efficient lookup    
+    -- transform table into efficient lookup
     local lookup = {
         CWeaponInfo={},
+        CAmmoInfo={}
     }
-    local key = nil
+    local alias = {
+        CWeaponInfo="CWeaponInfo",
+        CAmmoInfo="CAmmoInfo",
+        CAmmoProjectileInfo="CAmmoInfo",
+        CAmmoThrownInfo="CAmmoInfo",
+        CAmmoRocketInfo="CAmmoInfo"
+    }
     for _, item in pairs(meta) do -- each <Item type=...>
-        if item.xarg ~= nil and item.xarg.type ~= nil and lookup[item.xarg.type] ~= nil then
-            local item_hash = nil
-            local item_type = item.xarg.type
-            local data = {} -- {offset=, gtatype=, val=}
-            for _, value_pack in pairs(item) do -- each <Field>?</>
-                if value_pack.label == "Name" then
-                    item_hash = joaat(value_pack[1]) -- e.g. WEAPON_PISTOL
-                elseif gta_offset_types[item_type] ~= nil then
-                    parse_into_gta_form_recursive(gta_offset_types[item_type], data, value_pack, "")
+        if item.xarg ~= nil and item.xarg.type ~= nil then
+            local key = alias[item.xarg.type]
+            if lookup[key] ~= nil then
+                local item_hash = nil
+                local item_type = key
+                local data = {} -- {offset=, gtatype=, val=}
+                for _, value_pack in pairs(item) do -- each <Field>
+                    if value_pack.label == "Name" then
+                        item_hash = joaat(value_pack[1]) -- e.g. WEAPON_PISTOL
+                    elseif gta_offset_types[item_type] ~= nil then
+                        parse_into_gta_form_recursive(gta_offset_types[item_type], data, value_pack, "")
+                    end
                 end
+                lookup[item_type][item_hash] = data
             end
-            lookup[item_type][item_hash] = data
         end
     end 
     return lookup
 end
+
+
 
 function get_world_addr()
     local world_base = memory.scan_pattern("48 8B 05 ? ? ? ? 45 ? ? ? ? 48 8B 48 08 48 85 C9 74 07")
@@ -119,13 +147,10 @@ function get_world_addr()
     return world_addr:deref()
 end
 
-local world_ptr = get_world_addr()
-function apply_weapons_meta(script, lookup, curr_weap)
-    local wpn_info_addr = world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
-    -- apply CWeaponInfo changes
-    local data = lookup.CWeaponInfo[curr_weap]
+function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr)
+    local data = lookup[looktype][curr_weap]
     for k, v in pairs(data) do
-        local wpn_field_addr = wpn_info_addr:add(v.offset)
+        local wpn_field_addr = base_addr:add(v.offset)
         -- special handling model
         if v.gtatype == "byte" then
             wpn_field_addr:set_byte(v.val)
@@ -135,7 +160,7 @@ function apply_weapons_meta(script, lookup, curr_weap)
             if STREAMING.IS_MODEL_VALID(v.val) then
                 STREAMING.REQUEST_MODEL(v.val)
                 while not STREAMING.HAS_MODEL_LOADED(v.val) do script:yield() end
-                log.info("loaded model "..tostring(v.val))
+                log.info("[debug]["..looktype.."] loaded model "..tostring(v.val))
             end
             wpn_field_addr:set_dword(v.val)            
         elseif v.gtatype == "float" then
@@ -146,7 +171,7 @@ function apply_weapons_meta(script, lookup, curr_weap)
             wpn_field_addr:set_string(v.val)
         elseif v.gtatype == "bitset192" then
             local bitset64s = {0, 0, 0}
-            local debugmsg = "[debug][wpn_info][flags] bits="
+            local debugmsg = "[debug]["..looktype.."][flags] bits="
             for _, b in pairs(v.val) do
                 local q = b // 64 + 1 -- lua 1-indexed
                 local r = b % 64
@@ -154,12 +179,28 @@ function apply_weapons_meta(script, lookup, curr_weap)
                 bitset64s[q] = bitset64s[q] | (1 << r)
             end
             log.info(debugmsg)
-            -- log.info("[debug][wpn_info][flags] bitset1="..tostring(bitset64s[1]))
+            -- log.info("[debug]["..looktype.."][flags] bitset1="..tostring(bitset64s[1]))
             wpn_field_addr:set_qword(bitset64s[1])
             wpn_field_addr:add(8):set_qword(bitset64s[2])
             wpn_field_addr:add(16):set_qword(bitset64s[3])
+        elseif v.gtatype == "bitset32" then
+            local bitset = 0
+            local debugmsg = "[debug]["..looktype.."][flags] bits="
+            for _, b in pairs(v.val) do
+                debugmsg = debugmsg..tostring(b).." "
+                bitset = bitset | (1 << b)
+            end
+            log.info(debugmsg)
+            wpn_field_addr:set_dword(bitset)
+        elseif v.gtatype == "ref" and looktype == "CWeaponInfo" then
+            local curr_ammo = v.val
+            local ammo_info_addr = base_addr:add(0x60):deref()
+            if lookup.CAmmoInfo[curr_ammo] ~= nil then
+                -- recursive call
+                apply_weapons_meta(script, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr)
+            end
         end
-        log.info("[debug][wpn_info] Applied "..tostring(v.val).." at "..string.format("0x%x", v.offset))
+        log.info("[debug]["..looktype.."] Applied "..tostring(v.val).." at "..string.format("0x%x", v.offset))
     end
 end
 
@@ -181,12 +222,14 @@ tprint(collect(weaponsmeta))
 local lookup = transform(collect(weaponsmeta))
 tprint(lookup)
 local prev_weapon = nil
+local world_ptr = get_world_addr()
+local wpn_info_addr = world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
+
 myTab:add_button("reload", function()
     package.loaded.weaponsmeta = nil
     require("weaponsmeta")
     lookup = transform(collect(weaponsmeta))
     prev_weapon = nil
-    world_ptr = get_world_addr()
     log.info("[weaponsmeta] reloaded.")
 end)
 
@@ -197,7 +240,12 @@ script.register_looped("weaponloop", function (script)
     local curr_weap = 0
     local has_weap, curr_weap = WEAPON.GET_CURRENT_PED_WEAPON(playerPed, curr_weap)
     if has_weap and curr_weap ~= prev_weapon and lookup.CWeaponInfo[curr_weap] ~= nil then
-        apply_weapons_meta(script, lookup, curr_weap)
+        world_ptr = get_world_addr()
+        wpn_info_addr = world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
+        -- apply CWeaponInfo changes
+        apply_weapons_meta(script, lookup, "CWeaponInfo", curr_weap, wpn_info_addr)
         prev_weapon = curr_weap
     end
 end)
+
+-- proj_xm_thruster_rpg_trail

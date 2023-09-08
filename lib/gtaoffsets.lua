@@ -1,4 +1,97 @@
 gta_offset_types = {
+    CAmmoInfo={
+        Model={0x0014, "hash"},
+        Audio={0x0018, "hash"},
+        -- AmmoMax value="20" />
+        -- AmmoMax50 value="20" />
+        -- AmmoMax100 value="20" />
+        -- AmmoMaxMP value="20" />
+        -- AmmoMax50MP value="20" />
+        -- AmmoMax100MP value="20" />
+        AmmoFlags={0x0038, "flags32"},
+        AmmoSpecialType={0x003c, "enum"},
+        
+        LifeTime={0x0044, "float"},
+        FromVehicleLifeTime={0x0048, "float"},
+        LaunchSpeed={0x0058, "float"},
+        Explosion={--0x007C
+            Default={0x007C, "enum"},
+            HitCar={0x007C+0x4, "enum"},
+            HitTruck={0x007C+0x8, "enum"},
+            HitBike={0x007C+0xC, "enum"},
+            HitBoat={0x007C+0x10, "enum"},
+            HitPlane={0x007C+0x14, "enum"}
+        },
+        FuseFx={0x0094, "hash"},
+        ProximityFx={0x0098, "hash"},
+        TrailFx={0x009c, "hash"},
+        -- <TrailFxUnderWater />
+        -- <FuseFxFP />
+        -- <PrimedFxFP />
+        -- <TrailFxFadeInTime value="0.000000" />
+        -- <TrailFxFadeOutTime value="0.000000" />
+        -- <PrimedFx />
+        -- <DisturbFxDefault>proj_disturb_dust</DisturbFxDefault>
+        -- <DisturbFxSand>proj_disturb_dust</DisturbFxSand>
+        -- <DisturbFxWater>proj_disturb_dust</DisturbFxWater>
+        -- <DisturbFxDirt>proj_disturb_dust</DisturbFxDirt>
+        -- <DisturbFxFoliage>proj_disturb_dust</DisturbFxFoliage>
+        -- <DisturbFxProbeDist value="0.000000" />
+        -- <DisturbFxScale value="0.000000" />
+        -- <GroundFxProbeDistance value="2.500000" />
+        -- <LightOnlyActiveWhenStuck value="false" />
+        -- <LightFlickers value="false" />
+        -- <LightSpeedsUp value="false" />
+        -- <LightBone />
+        -- <LightColour x="0.000000" y="0.000000" z="0.000000" />
+        -- <LightIntensity value="0.000000" />
+        -- <LightRange value="0.000000" />
+        -- <LightFalloffExp value="0.000000" />
+        -- <LightFrequency value="0.000000" />
+        -- <LightPower value="0.000000" />
+        -- <CoronaSize value="0.000000" />
+        -- <CoronaIntensity value="0.000000" />
+        -- <CoronaZBias value="0.000000" />
+        -- <ProjectileFlags>DestroyOnImpact ProcessImpacts DoGroundDisturbanceFx</ProjectileFlags>
+        -- <ProximityActivationTime value="3.000000" />
+        -- <ProximityTriggerRadius value="-1.000000" />
+        -- <ProximityFuseTimePed value="1.000000" />
+        -- <ProximityFuseTimeVehicleMin value="0.500000" />
+        -- <ProximityFuseTimeVehicleMax value="0.050000" />
+        -- <ProximityFuseTimeVehicleSpeed value="30.000000" />
+        -- <ProximityLightColourUntriggered x="0.000000" y="0.000000" z="0.000000" />
+        -- <ProximityLightFrequencyMultiplierTriggered value="4.000000" />
+        -- <ChargedLaunchTime value="-1.000000" />
+        -- <ChargedLaunchSpeedMult value="1.000000" />
+        -- <ClusterExplosionTag>GRENADE</ClusterExplosionTag>
+        -- <ClusterExplosionCount value="5" />
+        -- <ClusterMinRadius value="5.000000" />
+        -- <ClusterMaxRadius value="10.000000" />
+        -- <ClusterInitialDelay value="0.500000" />
+        -- <ClusterInbetweenDelay value="0.250000" />
+        ForwardDragCoeff={0x0170, "float"},
+        SideDragCoeff={0x0174, "float"},
+        TimeBeforeHoming={0x0178, "float"},
+        TimeBeforeSwitchTargetMin={0x017c, "float"},
+        TimeBeforeSwitchTargetMax={0x0180, "float"},
+        ProximityRadius={0x0184, "float"},
+        PitchChangeRate={0x0188, "float"},
+        YawChangeRate={0x018c, "float"},
+        RollChangeRate={0x0190, "float"},
+        MaxRollAngleSin={0x0194, "float"},
+        LifeTimePlayerVehicleLockedOverrideMP={0x0198, "float"},
+        HomingRocketParams={-- 0x019c
+            ShouldUseHomingParamsFromInfo={0x019c, "bool"},
+            ShouldIgnoreOwnerCombatBehaviour={0x019c+0x01, "bool"},
+            TimeBeforeStartingHoming={0x019c+0x04, "float"},
+            TimeBeforeHomingAngleBreak={0x019c+0x08, "float"},
+            TurnRateModifier={0x019c+0x0c, "float"},
+            PitchYawRollClamp={0x019c+0x10, "float"},
+            DefaultHomingRocketBreakLockAngle={0x019c+0x14, "float"},
+            DefaultHomingRocketBreakLockAngleClose={0x019c+0x18, "float"},
+            DefaultHomingRocketBreakLockCloseDistance={0x019c+0x1c, "float"}
+        }
+    },
     CWeaponInfo={
         Model={0x0014, "hash"},
         Audio={0x0018, "hash"},
@@ -12,7 +105,7 @@ gta_offset_types = {
             HitPlane={0x0038, "enum"}
         },
         FireType={0x0054, "enum"},
-        -- <AmmoInfo ref="AMMO_SHOTGUN" /> -- need to handle directly
+        AmmoInfo={0x0060, "ref"},
         ClipSize={0x0070, "int"}, -- doesn't seem to work
         AccuracySpread={0x0074, "float"},
         AccurateModeAccuracyModifier={0x0078, "float"},
