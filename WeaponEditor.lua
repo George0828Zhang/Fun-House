@@ -39,67 +39,72 @@ end
 
 function parse_into_gta_form_recursive(offset_table, out_table, value_pack, parent_tag)
     local key = value_pack.label
-    if offset_table[key] ~= nil then
-        if offset_table[key][1] ~= nil then
-            -- has offset
-            local offset = offset_table[key][1]
-            local typ = offset_table[key][2]
-            local value = value_pack[1]
-            if value_pack.empty and value_pack.xarg.value ~= nil then
-                value = value_pack.xarg.value -- e.g. <ClipSize value="6" />
+    if offset_table[key] == nil then
+        return
+    end
+
+    if offset_table[key][1] ~= nil then
+        -- has offset
+        local offset = offset_table[key][1]
+        local typ = offset_table[key][2]
+        local value = value_pack[1]
+        if value_pack.empty and value_pack.xarg.value ~= nil then
+            value = value_pack.xarg.value -- e.g. <ClipSize value="6" />
+        end
+        if offset_table._base ~= nil then
+            offset = offset + offset_table._base
+        end
+        local gta = "dword" -- default
+        if typ == "hash" then
+            value = joaat(value)
+        elseif typ == "enum" then
+            value = handle_enum(parent_tag..key, value)
+        elseif typ == "int" then
+            value = tonumber(value)
+        elseif typ == "bool" then
+            value = (value == "true")
+            gta = "byte"
+        elseif typ:find("^flags") ~= nil then -- flags32, flags192 etc
+            bits = {}
+            for w in value:gmatch("%S+") do
+                table.insert(bits, handle_enum(key, w))
             end
-            local gta = "dword" -- default
-            if typ == "hash" then
-                value = joaat(value)
-            elseif typ == "enum" then
-                value = handle_enum(parent_tag..key, value)
-            elseif typ == "int" then
-                value = tonumber(value)
-            elseif typ == "bool" then
-                value = (value == "true")
-                gta = "byte"
-            elseif typ:find("^flags") ~= nil then -- flags32, flags192 etc
-                bits = {}
-                for w in value:gmatch("%S+") do
-                    table.insert(bits, handle_enum(key, w))
-                end
-                value = bits
-                gta = typ:gsub("flags", "bitset")
-            elseif typ == "vec2" then
-                value = tonumber(value_pack.xarg.x)
-                gta = "float"
-                table.insert(out_table, {
-                    offset=offset + 4,
-                    gtatype="float",
-                    val=tonumber(value_pack.xarg.y)
-                })
-            elseif typ == "vec3" then
-                value = tonumber(value_pack.xarg.x)
-                gta = "float"
-                table.insert(out_table, {
-                    offset=offset + 4,
-                    gtatype="float",
-                    val=tonumber(value_pack.xarg.y)
-                })
-                table.insert(out_table, {
-                    offset=offset + 8,
-                    gtatype="float",
-                    val=tonumber(value_pack.xarg.z)
-                })
-            elseif typ == "ref" then
-                value = joaat(value_pack.xarg.ref)
-                gta = "ref"
-            else
-                value = tonumber(value)
-                gta = "float"            
-            end
-            table.insert(out_table, {offset=offset, gtatype=gta, val=value})
+            value = bits
+            gta = typ:gsub("flags", "bitset")
+        elseif typ == "vec2" then
+            value = tonumber(value_pack.xarg.x)
+            gta = "float"
+            table.insert(out_table, {
+                offset=offset + 4,
+                gtatype="float",
+                val=tonumber(value_pack.xarg.y)
+            })
+        elseif typ == "vec3" then
+            value = tonumber(value_pack.xarg.x)
+            gta = "float"
+            table.insert(out_table, {
+                offset=offset + 4,
+                gtatype="float",
+                val=tonumber(value_pack.xarg.y)
+            })
+            table.insert(out_table, {
+                offset=offset + 8,
+                gtatype="float",
+                val=tonumber(value_pack.xarg.z)
+            })
+        elseif typ == "ref_ammo" then
+            value = joaat(value_pack.xarg.ref)
+            gta = "ref_ammo"
         else
-            -- recursive
-            local off_sub = offset_table[key] -- should be another table
-            for sub_k, sub_v in pairs(value_pack) do
-                parse_into_gta_form_recursive(off_sub, out_table, sub_v, parent_tag..key)
-            end
+            value = tonumber(value)
+            gta = "float"
+        end
+        table.insert(out_table, {offset=offset, gtatype=gta, val=value})
+    else
+        -- recursive
+        local off_sub = offset_table[key] -- should be another table
+        for sub_k, sub_v in pairs(value_pack) do
+            parse_into_gta_form_recursive(off_sub, out_table, sub_v, parent_tag..key)
         end
     end
 end
@@ -192,7 +197,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr)
             end
             log.info(debugmsg)
             wpn_field_addr:set_dword(bitset)
-        elseif v.gtatype == "ref" and looktype == "CWeaponInfo" then
+        elseif v.gtatype == "ref_ammo" and looktype == "CWeaponInfo" then
             local curr_ammo = v.val
             local ammo_info_addr = base_addr:add(0x60):deref()
             if lookup.CAmmoInfo[curr_ammo] ~= nil then
@@ -247,5 +252,3 @@ script.register_looped("weaponloop", function (script)
         prev_weapon = curr_weap
     end
 end)
-
--- proj_xm_thruster_rpg_trail
