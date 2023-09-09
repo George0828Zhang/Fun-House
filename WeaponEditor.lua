@@ -37,14 +37,54 @@ function handle_enum(name, value)
     return out
 end
 
-function parse_into_gta_form_recursive(offset_table, out_table, value_pack, parent_tag)
+
+function recursive_parse_into_gta_form(inner_table, output_table, value_pack, next_tag)
+    -- recursive call
+    for sub_k, sub_v in pairs(value_pack) do
+        parse_into_gta_form(inner_table, output_table, sub_v, next_tag)
+    end
+end
+
+function parse_into_gta_form_array(offset_table, output_table, value_pack, parent_tag)
+    -- array syntax
+    -- base, "array", ItemTemplate, count
+    local key = value_pack.label
+    local offset = offset_table[key][1]
+    if offset_table._base ~= nil then
+        offset = offset + offset_table._base
+    end
+
+    local inner_table = offset_table[key].ItemTemplate -- should be another table
+    local interval = offset_table[key].ItemSize
+    local count = 0
+    for _, value_item in pairs(value_pack) do
+        if value_item.label == "Item" then
+            inner_table._base = offset + count * interval
+            recursive_parse_into_gta_form(inner_table, output_table, value_item, parent_tag..key)
+            count = count + 1
+        end
+    end
+    -- handle count
+    local count_pack = {label="Count", count}
+    if offset_table._base ~= nil then
+        offset_table[key]._base = offset_table._base
+    end
+    parse_into_gta_form(offset_table[key], output_table, count_pack, parent_tag)
+end
+
+function parse_into_gta_form(offset_table, output_table, value_pack, parent_tag)
     local key = value_pack.label
     if offset_table[key] == nil then
         return
     end
 
-    if offset_table[key][1] ~= nil then
-        -- has offset
+    if offset_table[key][1] == nil then
+        local inner_table = offset_table[key] -- should be another table
+        recursive_parse_into_gta_form(inner_table, output_table, value_pack, parent_tag..key)
+    elseif offset_table[key][2] == "array" then
+        parse_into_gta_form_array(offset_table, output_table, value_pack, parent_tag)
+    else
+        -- has offset + not array
         local offset = offset_table[key][1]
         local typ = offset_table[key][2]
         local value = value_pack[1]
@@ -74,38 +114,22 @@ function parse_into_gta_form_recursive(offset_table, out_table, value_pack, pare
         elseif typ == "vec2" then
             value = tonumber(value_pack.xarg.x)
             gta = "float"
-            table.insert(out_table, {
-                offset=offset + 4,
-                gtatype="float",
-                val=tonumber(value_pack.xarg.y)
-            })
+            table.insert(output_table, {offset=offset + 4, gtatype="float", val=tonumber(value_pack.xarg.y)})
         elseif typ == "vec3" then
             value = tonumber(value_pack.xarg.x)
             gta = "float"
-            table.insert(out_table, {
-                offset=offset + 4,
-                gtatype="float",
-                val=tonumber(value_pack.xarg.y)
-            })
-            table.insert(out_table, {
-                offset=offset + 8,
-                gtatype="float",
-                val=tonumber(value_pack.xarg.z)
-            })
+            table.insert(output_table, {offset=offset + 4, gtatype="float", val=tonumber(value_pack.xarg.y)})
+            table.insert(output_table, {offset=offset + 8, gtatype="float", val=tonumber(value_pack.xarg.z)})
         elseif typ == "ref_ammo" then
             value = joaat(value_pack.xarg.ref)
             gta = "ref_ammo"
+        elseif typ == "array" then
+            log.info("array!")
         else
             value = tonumber(value)
             gta = "float"
         end
-        table.insert(out_table, {offset=offset, gtatype=gta, val=value})
-    else
-        -- recursive
-        local off_sub = offset_table[key] -- should be another table
-        for sub_k, sub_v in pairs(value_pack) do
-            parse_into_gta_form_recursive(off_sub, out_table, sub_v, parent_tag..key)
-        end
+        table.insert(output_table, {offset=offset, gtatype=gta, val=value})
     end
 end
 
@@ -133,7 +157,7 @@ function transform(meta)
                     if value_pack.label == "Name" then
                         item_hash = joaat(value_pack[1]) -- e.g. WEAPON_PISTOL
                     elseif gta_offset_types[item_type] ~= nil then
-                        parse_into_gta_form_recursive(gta_offset_types[item_type], data, value_pack, "")
+                        parse_into_gta_form(gta_offset_types[item_type], data, value_pack, "")
                     end
                 end
                 lookup[item_type][item_hash] = data
@@ -152,6 +176,18 @@ function get_world_addr()
     return world_addr:deref()
 end
 
+function try_load(script, model, looktype)
+    if not STREAMING.IS_MODEL_VALID(model) then
+        model = WEAPON.GET_WEAPON_COMPONENT_TYPE_MODEL(model)
+    end
+    if not STREAMING.IS_MODEL_VALID(model) then
+        return
+    end
+    STREAMING.REQUEST_MODEL(model)
+    while not STREAMING.HAS_MODEL_LOADED(model) do script:yield() end
+    log.info("[debug]["..looktype.."] loaded model "..tostring(model))
+end
+
 function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr)
     local data = lookup[looktype][curr_weap]
     for k, v in pairs(data) do
@@ -162,11 +198,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr)
         elseif v.gtatype == "word" then
             wpn_field_addr:set_word(v.val)
         elseif v.gtatype == "dword" then
-            if STREAMING.IS_MODEL_VALID(v.val) then
-                STREAMING.REQUEST_MODEL(v.val)
-                while not STREAMING.HAS_MODEL_LOADED(v.val) do script:yield() end
-                log.info("[debug]["..looktype.."] loaded model "..tostring(v.val))
-            end
+            try_load(script, v.val, looktype)
             wpn_field_addr:set_dword(v.val)            
         elseif v.gtatype == "float" then
             wpn_field_addr:set_float(v.val)
@@ -226,6 +258,11 @@ local myTab = gui.get_tab("Debug")
 tprint(collect(weaponsmeta))
 local lookup = transform(collect(weaponsmeta))
 tprint(lookup)
+-- log.info("WAPClip is "..tostring(joaat("WAPClip")))
+-- log.info("COMPONENT_PRECISIONRIFLE_CLIP_01 is "..tostring(joaat("COMPONENT_PRECISIONRIFLE_CLIP_01")))
+-- log.info("WAPScop is "..tostring(joaat("WAPScop")))
+-- log.info("COMPONENT_AT_SCOPE_LARGE is "..tostring(joaat("COMPONENT_AT_SCOPE_LARGE")))
+-- log.info("COMPONENT_AT_SCOPE_MAX is "..tostring(joaat("COMPONENT_AT_SCOPE_MAX")))
 local prev_weapon = nil
 local world_ptr = get_world_addr()
 local wpn_info_addr = world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
@@ -237,6 +274,19 @@ myTab:add_button("reload", function()
     prev_weapon = nil
     log.info("[weaponsmeta] reloaded.")
 end)
+
+myTab:add_button("try", function()
+    local playerPed = PLAYER.PLAYER_PED_ID()
+    local weap = joaat("WEAPON_PRECISIONRIFLE")
+    local comp = joaat("COMPONENT_AT_AR_SUPP_02")
+    WEAPON.GIVE_WEAPON_COMPONENT_TO_PED(playerPed, weap, comp) 
+    -- WEAPON.REMOVE_WEAPON_COMPONENT_FROM_PED(playerPed, weap, comp) 
+    local hascomp = WEAPON.HAS_PED_GOT_WEAPON_COMPONENT(playerPed, weap, comp) 
+    local active = WEAPON.IS_PED_WEAPON_COMPONENT_ACTIVE(playerPed, weap, comp) 
+    log.info("result: got "..tostring(hascomp).." active "..tostring(active))
+end)
+
+
 
 script.register_looped("weaponloop", function (script)
     script:yield() -- necessary for numbers to update

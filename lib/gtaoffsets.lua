@@ -238,12 +238,29 @@ gta_offset_types = {
         LockOnRange={0x0288, "float"},
         WeaponRange={0x028c, "float"},
         
+        DefaultCameraHash={0x02b8, "hash"},
+
         ReticuleStyleHash={0x05ac, "hash"},
-        -- AttachPoints={
-        --     {
-        --         AttachBone={}
-        --     }, "array"
-        -- },
+        FirstPersonReticuleStyleHash={0x05b0, "hash"},
+        AttachPoints={
+            0x0604, "array",
+            ItemTemplate={
+                -- _base set at runtime
+                AttachBone={0x00, "hash"},
+                Components={
+                    0x08, "array",
+                    ItemTemplate={
+                        -- _base set at runtime
+                        Name={0x00, "hash"},
+                        Default={0x04, "bool"}
+                    },
+                    ItemSize=0x8,
+                    Count={0x68, "int"}
+                }
+            },
+            ItemSize=0x6c,
+            Count={0x08f8, "int"}
+        },
         WeaponFlags={0x0900, "flags192"},
         AirborneAircraftLockOnMultiplier={0x0968, "float"},
     },
