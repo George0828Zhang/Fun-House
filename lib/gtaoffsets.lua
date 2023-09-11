@@ -10,6 +10,7 @@ gta_offset_types = {
         AmmoMax100MP={0x0034, "int"},
         AmmoFlags={0x0038, "flags32"},
         AmmoSpecialType={0x003c, "enum"},
+        -- The all entris following are for projectiles only!
         Damage={0x0040, "float"},
         LifeTime={0x0044, "float"},
         FromVehicleLifeTime={0x0048, "float"},
@@ -25,62 +26,72 @@ gta_offset_types = {
         PedRicochetTolerance={0x0070, "float"},
         VehicleRicochetTolerance={0x0074, "float"},
         FrictionMultiplier={0x0078, "float"},
-        Explosion={--0x007C
-            Default={0x007C, "enum"},
-            HitCar={0x007C+0x4, "enum"},
-            HitTruck={0x007C+0x8, "enum"},
-            HitBike={0x007C+0xC, "enum"},
-            HitBoat={0x007C+0x10, "enum"},
-            HitPlane={0x007C+0x14, "enum"}
+        Explosion={
+            _base=0x007C,
+            Default={0x00, "enum"},
+            HitCar={0x04, "enum"},
+            HitTruck={0x08, "enum"},
+            HitBike={0x0C, "enum"},
+            HitBoat={0x10, "enum"},
+            HitPlane={0x14, "enum"}
         },
         FuseFx={0x0094, "hash"},
         ProximityFx={0x0098, "hash"},
         TrailFx={0x009c, "hash"},
-        -- <TrailFxUnderWater />
-        -- <FuseFxFP />
-        -- <PrimedFxFP />
-        -- <TrailFxFadeInTime value="0.000000" />
-        -- <TrailFxFadeOutTime value="0.000000" />
-        -- <PrimedFx />
-        -- <DisturbFxDefault>proj_disturb_dust</DisturbFxDefault>
-        -- <DisturbFxSand>proj_disturb_dust</DisturbFxSand>
-        -- <DisturbFxWater>proj_disturb_dust</DisturbFxWater>
-        -- <DisturbFxDirt>proj_disturb_dust</DisturbFxDirt>
-        -- <DisturbFxFoliage>proj_disturb_dust</DisturbFxFoliage>
-        -- <DisturbFxProbeDist value="0.000000" />
-        -- <DisturbFxScale value="0.000000" />
-        -- <GroundFxProbeDistance value="2.500000" />
-        -- <LightOnlyActiveWhenStuck value="false" />
-        -- <LightFlickers value="false" />
-        -- <LightSpeedsUp value="false" />
-        -- <LightBone />
-        -- <LightColour x="0.000000" y="0.000000" z="0.000000" />
-        -- <LightIntensity value="0.000000" />
-        -- <LightRange value="0.000000" />
-        -- <LightFalloffExp value="0.000000" />
-        -- <LightFrequency value="0.000000" />
-        -- <LightPower value="0.000000" />
-        -- <CoronaSize value="0.000000" />
-        -- <CoronaIntensity value="0.000000" />
-        -- <CoronaZBias value="0.000000" />
-        -- <ProjectileFlags>DestroyOnImpact ProcessImpacts DoGroundDisturbanceFx</ProjectileFlags>
-        -- <ProximityActivationTime value="3.000000" />
-        -- <ProximityTriggerRadius value="-1.000000" />
-        -- <ProximityFuseTimePed value="1.000000" />
-        -- <ProximityFuseTimeVehicleMin value="0.500000" />
-        -- <ProximityFuseTimeVehicleMax value="0.050000" />
-        -- <ProximityFuseTimeVehicleSpeed value="30.000000" />
-        -- <ProximityLightColourUntriggered x="0.000000" y="0.000000" z="0.000000" />
-        -- <ProximityLightFrequencyMultiplierTriggered value="4.000000" />
-        -- <ChargedLaunchTime value="-1.000000" />
-        -- <ChargedLaunchSpeedMult value="1.000000" />
-        -- <ClusterExplosionTag>GRENADE</ClusterExplosionTag>
-        -- <ClusterExplosionCount value="5" />
-        -- <ClusterMinRadius value="5.000000" />
-        -- <ClusterMaxRadius value="10.000000" />
-        -- <ClusterInitialDelay value="0.500000" />
-        -- <ClusterInbetweenDelay value="0.250000" />
+        TrailFxUnderWater={0x00a0, "hash"},
+        PrimedFx={0x00a4, "hash"},
+        FuseFxFP={0x00a8, "hash"},
+        PrimedFxFP={0x00ac, "hash"},
+        TrailFxFadeInTime={0x00b0, "float"},
+        TrailFxFadeOutTime={0x00b4, "float"},
+        DisturbFxDefault={0x00b8, "hash"},
+        DisturbFxSand={0x00bc, "hash"},
+        DisturbFxWater={0x00c0, "hash"},
+        DisturbFxDirt={0x00c4, "hash"},
+        DisturbFxFoliage={0x00c8, "hash"},
+        DisturbFxProbeDist={0x00cc, "float"},
+        DisturbFxScale={0x00d0, "float"},
+        GroundFxProbeDistance={0x00d4, "float"},
+        FxAltTintColour={0x00d8, "bool"},
+        LightOnlyActiveWhenStuck={0x00d9, "bool"},
+        LightFlickers={0x00da, "bool"},
+        LightSpeedsUp={0x00db, "bool"},
+        LightBone={0x00dc, "int16"},        
+        LightColour={0x00e0, "vec3"},
+        LightIntensity={0x00f0, "float"},
+        LightRange={0x00f4, "float"},
+        LightFalloffExp={0x00f8, "float"},
+        LightFrequency={0x00fc, "float"},
+        LightPower={0x0100, "float"},
+        CoronaSize={0x0104, "float"},
+        CoronaIntensity={0x0108, "float"},
+        CoronaZBias={0x010c, "float"},        
+        ProximityAffectsFiringPlayer={0x0110, "bool"},
+        ProximityCanBeTriggeredByPeds={0x0111, "bool"},
+        ProximityActivationTime={0x0114, "float"},
+        ProximityRepeatedDetonationActivationTime={0x0118, "float"},
+        ProximityTriggerRadius={0x011c, "float"},
+        ProximityFuseTimePed={0x0120, "float"},
+        ProximityFuseTimeVehicleMin={0x0124, "float"},
+        ProximityFuseTimeVehicleMax={0x0128, "float"},
+        ProximityFuseTimeVehicleSpeed={0x012c, "float"},
+        ProximityLightColourUntriggered={0x0130, "vec3"},
+        ProximityLightFrequencyMultiplierTriggered={0x0140, "float"},
+        TimeToIgnoreOwner={0x0144, "float"},
+        ChargedLaunchTime={0x0148, "float"},
+        ChargedLaunchSpeedMult={0x014c, "float"},
+        ClusterExplosionTag={0x0150, "enum"},
+        ClusterExplosionCount={0x0154, "int"},
+        ClusterMinRadius={0x0158, "float"},
+        ClusterMaxRadius={0x015c, "float"},
+        ClusterInitialDelay={0x0160, "float"},
+        ClusterInbetweenDelay={0x0164, "float"},
         ProjectileFlags={0x0168, "flags32"},
+        -- The following 3 are for thrown weapons only!
+        ThrownForce={0x0170, "float"},
+        ThrownForceFromVehicle={0x0174, "float"},
+        AmmoMaxMPBonus={0x0178, "float"},
+        -- The following are for rocket weapons only!
         ForwardDragCoeff={0x0170, "float"},
         SideDragCoeff={0x0174, "float"},
         TimeBeforeHoming={0x0178, "float"},
@@ -102,11 +113,7 @@ gta_offset_types = {
             DefaultHomingRocketBreakLockAngle={0x019c+0x14, "float"},
             DefaultHomingRocketBreakLockAngleClose={0x019c+0x18, "float"},
             DefaultHomingRocketBreakLockCloseDistance={0x019c+0x1c, "float"}
-        },
-        -- Below is for Thrown weapons
-        ThrownForce={0x0170, "float"},
-        ThrownForceFromVehicle={0x0174, "float"},
-        AmmoMaxMPBonus={0x0178, "float"},
+        }
     },
     CWeaponInfo={
         Model={0x0014, "hash"},
@@ -152,7 +159,7 @@ gta_offset_types = {
         ForceHitPed={0x00dc, "float"},
         ForceHitVehicle={0x00e0, "float"},
         ForceHitFlyingHeli={0x00e4, "float"},
-        -- OverrideForces={0x00e8, "list"}, -- tricky to handle
+        -- OverrideForces={0x00e8, "ref_forces"}, -- tricky to handle
         ForceMaxStrengthMult={0x00f8, "float"},
         ForceFalloffRangeStart={0x00fc, "float"},
         ForceFalloffRangeEnd ={0x0100, "float"},
@@ -242,6 +249,8 @@ gta_offset_types = {
 
         ReticuleStyleHash={0x05ac, "hash"},
         FirstPersonReticuleStyleHash={0x05b0, "hash"},
+        MovementModeConditionalIdle={0x05c4, "hash"},
+
         AttachPoints={
             0x0604, "array",
             ItemTemplate={
