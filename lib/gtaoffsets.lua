@@ -1,3 +1,8 @@
+-- Author: George Chang (George0828Zhang)
+-- Credits:
+-- https://github.com/Yimura/GTAV-Classes
+-- https://alexguirre.github.io/rage-parser-dumps/
+
 gta_offset_types = {
     CAmmoInfo={
         Model={0x0014, "hash"},
@@ -56,7 +61,7 @@ gta_offset_types = {
         LightOnlyActiveWhenStuck={0x00d9, "bool"},
         LightFlickers={0x00da, "bool"},
         LightSpeedsUp={0x00db, "bool"},
-        LightBone={0x00dc, "int16"},
+        LightBone={0x00dc, "enum16"},
         LightColour={0x00e0, "vec3"},
         LightIntensity={0x00f0, "float"},
         LightRange={0x00f4, "float"},
@@ -129,9 +134,9 @@ gta_offset_types = {
             HitPlane={0x14, "enum"}
         },
         FireType={0x0054, "enum"},
-        AmmoInfo={0x0060, "ref_ammo"},
+        -- AmmoInfo={0x0060, "ref_ammo"}, -- can't change ref if new ammo's addr not known
         -- AimingInfo={0x0068, "ref_aiming"}, -- tricky to handle
-        ClipSize={0x0070, "int"}, -- doesn't seem to work
+        ClipSize={0x0070, "int"}, -- overridden by components, always
         AccuracySpread={0x0074, "float"},
         AccurateModeAccuracyModifier={0x0078, "float"},
         RunAndGunAccuracyModifier={0x007c, "float"},
@@ -159,7 +164,7 @@ gta_offset_types = {
         ForceHitPed={0x00dc, "float"},
         ForceHitVehicle={0x00e0, "float"},
         ForceHitFlyingHeli={0x00e4, "float"},
-        -- OverrideForces={0x00e8, "ref_forces"}, -- tricky to handle
+        -- OverrideForces={0x00e8, "ref_forces"}, -- atarray needs deref
         ForceMaxStrengthMult={0x00f8, "float"},
         ForceFalloffRangeStart={0x00fc, "float"},
         ForceFalloffRangeEnd ={0x0100, "float"},
@@ -272,24 +277,97 @@ gta_offset_types = {
         FirstPersonAimFovMax={0x0304, "float"},
         FirstPersonScopeFov={0x0308, "float"},
         FirstPersonScopeAttachmentFov={0x030c, "float"},
-
-        -- FirstPersonScopeAttachmentData={
-        --     0x0400, "array",
+        FirstPersonDrivebyIKOffset={0x0310, "vec3"},
+        FirstPersonRNGOffset={0x0320, "vec3"},
+        FirstPersonRNGRotationOffset={0x0330, "vec3"},
+        FirstPersonLTOffset={0x0340, "vec3"},
+        FirstPersonLTRotationOffset={0x0350, "vec3"},
+        FirstPersonScopeOffset={0x0360, "vec3"},
+        FirstPersonScopeAttachmentOffset={0x0370, "vec3"},
+        FirstPersonScopeRotationOffset={0x0380, "vec3"},
+        FirstPersonScopeAttachmentRotationOffset={0x0390, "vec3"},
+        FirstPersonAsThirdPersonIdleOffset={0x03a0, "vec3"},
+        FirstPersonAsThirdPersonRNGOffset={0x03b0, "vec3"},
+        FirstPersonAsThirdPersonLTOffset={0x03c0, "vec3"},
+        FirstPersonAsThirdPersonScopeOffset={0x03d0, "vec3"},
+        FirstPersonAsThirdPersonWeaponBlockedOffset={0x03e0, "vec3"},
+        FirstPersonDofSubjectMagnificationPowerFactorNear={0x03f0, "float"},
+        FirstPersonDofMaxNearInFocusDistance={0x03f4, "float"},
+        FirstPersonDofMaxNearInFocusDistanceBlendLevel={0x03f8, "float"},
+        -- FirstPersonScopeAttachmentData={ -- ataray needs deref
+        --     0x0400, "ARRAY.ATARRAY",
         --     ItemTemplate={
         --         -- _base set at runtime
         --         Name={0x00, "hash"},
         --         FirstPersonScopeAttachmentFov={0x04, "float"},
-        --         FirstPersonScopeAttachmentOffset={0x08, "vec3"},
-        --         FirstPersonScopeAttachmentRotationOffset={0x18, "vec3"},
+        --         FirstPersonScopeAttachmentOffset={0x10, "vec3"},
+        --         FirstPersonScopeAttachmentRotationOffset={0x20, "vec3"},
         --     }
-        --     ItemSize=unknown,
+        --     ItemSize=0x30,
         --     Count={unknown, "int"}
         -- }
-
+        ZoomFactorForAccurateMode={0x0410, "float"},
+        AimOffsetMin={0x0420, "vec3"},
+        AimOffsetMax={0x0430, "vec3"},
+        TorsoAimOffset={0x0440, "vec2"},
+        TorsoCrouchedAimOffset={0x0448, "vec2"},
+        AimProbeLengthMin={0x0450, "float"},
+        AimProbeLengthMax={0x0454, "float"},
+        AimOffsetMinFPSIdle={0x0460, "vec3"},
+        AimOffsetMedFPSIdle={0x0470, "vec3"},
+        AimOffsetMaxFPSIdle={0x0480, "vec3"},
+        AimOffsetMinFPSLT={0x0490, "vec3"},
+        AimOffsetMaxFPSLT={0x04a0, "vec3"},
+        AimOffsetMinFPSRNG={0x04b0, "vec3"},
+        AimOffsetMaxFPSRNG={0x04c0, "vec3"},
+        AimOffsetMinFPSScope={0x04d0, "vec3"},
+        AimOffsetMaxFPSScope={0x04e0, "vec3"},
+        AimOffsetEndPosMinFPSIdle={0x04f0, "vec3"},
+        AimOffsetEndPosMedFPSIdle={0x0500, "vec3"},
+        AimOffsetEndPosMaxFPSIdle={0x0510, "vec3"},
+        AimOffsetEndPosMinFPSLT={0x0520, "vec3"},
+        AimOffsetEndPosMedFPSLT={0x0530, "vec3"},
+        AimOffsetEndPosMaxFPSLT={0x0540, "vec3"},
+        AimProbeRadiusOverrideFPSIdle={0x0550, "float"},
+        AimProbeRadiusOverrideFPSIdleStealth={0x0554, "float"},
+        AimProbeRadiusOverrideFPSLT={0x0558, "float"},
+        AimProbeRadiusOverrideFPSRNG={0x055c, "float"},
+        AimProbeRadiusOverrideFPSScope={0x0560, "float"},
+        LeftHandIkOffset={0x0570, "vec3"},
+        IkRecoilDisplacement={0x0580, "float"},
+        IkRecoilDisplacementScope={0x0584, "float"},
+        IkRecoilDisplacementScaleBackward={0x0588, "float"},
+        IkRecoilDisplacementScaleVertical={0x058c, "float"},
+        ReticuleHudPosition={0x0590, "vec2"},
+        ReticuleHudPositionOffsetForPOVTurret={0x0598, "vec2"},
+        ReticuleMinSizeStanding={0x05a0, "float"},
+        ReticuleMinSizeCrouched={0x05a4, "float"},
+        ReticuleScale={0x05a8, "float"},
         ReticuleStyleHash={0x05ac, "hash"},
         FirstPersonReticuleStyleHash={0x05b0, "hash"},
+        PickupHash={0x05b4, "hash"},
+        MPPickupHash={0x05b8, "hash"},
+        HumanNameHash={0x05bc, "hash"},
+        AudioCollisionHash={0x05c0, "hash"},
         MovementModeConditionalIdle={0x05c4, "hash"},
-
+        AmmoDiminishingRate={0x05c8, "byte"},
+        HudDamage={0x05c9, "byte"},
+        HudSpeed={0x05ca, "byte"},
+        HudCapacity={0x05cb, "byte"},
+        HudAccuracy={0x05cc, "byte"},
+        HudRange={0x05cd, "byte"},
+        AimingBreathingAdditiveWeight={0x05d0, "float"},
+        FiringBreathingAdditiveWeight={0x05d4, "float"},
+        StealthAimingBreathingAdditiveWeight={0x05d8, "float"},
+        StealthFiringBreathingAdditiveWeight={0x05dc, "float"},
+        AimingLeanAdditiveWeight={0x05e0, "float"},
+        FiringLeanAdditiveWeight={0x05e4, "float"},
+        StealthAimingLeanAdditiveWeight={0x05e8, "float"},
+        StealthFiringLeanAdditiveWeight={0x05ec, "float"},
+        -- StatName={0x05f0, "string"}, -- no pointer:patch_string and no safe workaround
+        KnockdownCount={0x05f8, "int"},
+        KillshotImpulseScale={0x05fc, "float"},
+        NmShotTuningSet={0x0600, "hash"},
         AttachPoints={
             0x0604, "array",
             ItemTemplate={
@@ -309,7 +387,24 @@ gta_offset_types = {
             ItemSize=0x6c,
             Count={0x08f8, "int"}
         },
+        GunFeedBone={0x08fc, "enum16"},
         WeaponFlags={0x0900, "flags192"},
+        -- TintSpecValues={0x0918, "STRUCT.EXTERNAL_NAMED"}, -- need deref
+        -- FiringPatternAliases={0x0920, "STRUCT.EXTERNAL_NAMED"}, -- need deref
+        -- ReloadUpperBodyFixupExpressionData={0x0928, "STRUCT.EXTERNAL_NAMED"}, -- need deref
+        TargetSequenceGroup={0x0930, "hash"},
+        BulletDirectionOffsetInDegrees={0x0934, "float"},
+        BulletDirectionPitchOffset={0x0938, "float"},
+        BulletDirectionPitchHomingOffset={0x093c, "float"},
+        ExpandPedCapsuleRadius={0x0954, "float"},
+        VehicleAttackAngle={0x0958, "float"},
+        TorsoIKAngleLimit={0x095c, "float"},
+        MeleeDamageMultiplier={0x0960, "float"},
+        MeleeRightFistTargetHealthDamageScaler={0x0964, "float"},
         AirborneAircraftLockOnMultiplier={0x0968, "float"},
+        ArmouredVehicleGlassDamageOverride={0x096c, "float"},
+        -- CamoDiffuseTexIdxs={0x0970, "MAP.ATBINARYMAP"}, -- need deref & map tricky
+        RotateBarrelBone={0x0988, "enum16"},
+        RotateBarrelBone2={0x098a, "enum16"}
     },
 }
