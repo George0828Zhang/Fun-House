@@ -7,6 +7,7 @@
 
 myTab = gui.get_tab("Weapon Editor") -- or put "GUI_TAB_WEAPONS"
 enabled = true
+attachmentCB = true
 verbose = true
 
 require("lib/xmlreader")
@@ -385,6 +386,8 @@ myTab:add_imgui(function()
         reload_meta()
     end
 
+    attachmentCB, Toggled2 = ImGui.Checkbox("Apply Default Attachments", attachmentCB)
+
     ImGui.Text("Current Weapon:")
     local has_weap, curr_weap = get_current_weapon(world_ptr)
     if has_weap and attachment_registry[curr_weap] ~= nil then
@@ -427,7 +430,7 @@ script.register_looped("weaponloop", function (sc)
         end
         if lookup.CWeaponInfo[curr_weap] ~= nil then
             -- apply CWeaponInfo changes
-            apply_weapons_meta(script, lookup, "CWeaponInfo", curr_weap, wpn_info_addr, model_registry, memory_patch_registry)
+            apply_weapons_meta(sc, lookup, "CWeaponInfo", curr_weap, wpn_info_addr, model_registry, memory_patch_registry)
         end
         local ammo_info_addr = get_ammo_info_addr(wpn_info_addr)
         if ammo_info_addr == nil then
@@ -436,7 +439,7 @@ script.register_looped("weaponloop", function (sc)
         local curr_ammo = ammo_info_addr:add(0x10):get_dword()
         if lookup.CAmmoInfo[curr_ammo] ~= nil then
             -- apply CAmmoInfo changes
-            apply_weapons_meta(script, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
+            apply_weapons_meta(sc, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
         end
     end
 end)

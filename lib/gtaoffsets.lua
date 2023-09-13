@@ -437,7 +437,6 @@ function get_wpn_info_addr(world_addr)
     end
     local addr3 = addr2:add(0x20):deref()
     if addr3:is_null() then
-        log.warning("CWeaponInfo address is null! Either the offset changed or something else is wrong.")
         return nil
     end
     return addr3
