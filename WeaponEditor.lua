@@ -14,12 +14,31 @@ require("lib/gtaenums")
 require("lib/gtaoffsets")
 require("weaponsmeta")
 
+--------------------------------- DEBUG
 function log_info(msg)
     if verbose then
         log.info(msg)
     end
 end
 
+function tprint(tbl, indent)
+    if not indent then indent = 0 end
+    for k, v in pairs(tbl) do
+        formatting = string.rep("  ", indent) .. tostring(k) .. ": "
+        if type(v) == "table" then
+            log_info(formatting)
+            tprint(v, indent+1)
+        else
+            log_info(formatting .. tostring(v))
+        end
+    end
+end
+
+function print_hash(name)
+    log_info(name .. " hash is "..tostring(joaat(name)))
+end
+
+--------------------------------- PARSING
 function _handle_enum(name, value)
     if name == "DamageType" then
         return eDamageType[value]
@@ -183,46 +202,43 @@ function transform(meta, model_registry)
     return lookup
 end
 
-function get_world_addr()
-    local world_base = memory.scan_pattern("48 8B 05 ? ? ? ? 45 ? ? ? ? 48 8B 48 08 48 85 C9 74 07")
-    if world_base:is_null() then
-        log.warning("World address is null! Either the pattern changed or something else is wrong.")
+function register_attachments(xml, track, depth, components, attachment_registry)
+    track[depth] = xml.label
+    local isouter = false
+    if xml.xarg ~= nil and xml.xarg.type == "CWeaponInfo" then
+        track[depth] = xml.xarg.type
+        isouter = true
     end
-    local world_offset = world_base:add(3):get_dword()
-    local world_addr = world_base:add(world_offset + 7)
-    if world_addr:is_null() then
-        log.warning("World address is null! Either the pattern changed or something else is wrong.")
-        return nil
+    local weapon_name = nil
+    for _, item in pairs(xml) do
+        if isouter and item.label == "Name" then
+            weapon_name = item[1]
+        end
+        if type(item) == "table" then
+            if item.label == "Name" and track[2] == "AttachPoints" and track[4] == "Components" then
+                table.insert(components, item[1])
+            end
+            register_attachments(item, track, depth + 1, components, attachment_registry)
+        end
     end
-    return world_addr:deref()
+    if isouter and weapon_name ~= nil then
+        local weapon_hash = joaat(weapon_name)
+        for k, item in pairs(components) do
+            if attachment_registry[weapon_hash] == nil then
+                attachment_registry[weapon_hash] = {Name=weapon_name}
+            end
+            table.insert(attachment_registry[weapon_hash], item)
+            components[k] = nil
+        end
+    end
+    track[depth] = nil
 end
 
-function get_wpn_info_addr(world_addr)
-    -- world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
-    local addr1 = world_addr:add(0x8):deref()
-    if addr1:is_null() then
-        log.warning("CPed address is null! Either the offset changed or something else is wrong.")
-        return nil
+--------------------------------- MEMORY PATCHING
+function restore_patches()
+    for i,p in ipairs(memory_patch_registry) do
+        p:restore()
     end
-    local addr2 = addr1:add(0x10B8):deref()
-    if addr2:is_null() then
-        log.warning("CPedWeaponManager address is null! Either the offset changed or something else is wrong.")
-        return nil
-    end
-    local addr3 = addr2:add(0x20):deref()
-    if addr3:is_null() then
-        log.warning("CWeaponInfo address is null! Either the offset changed or something else is wrong.")
-        return nil
-    end
-    return addr3
-end
-
-function get_ammo_info_addr(wpn_info_addr)
-    local addr = wpn_info_addr:add(0x60):deref()
-    if addr:is_null() then -- e.g. melee weapons is null
-        return nil
-    end
-    return addr
 end
 
 function try_load(script, model, looktype)
@@ -297,70 +313,43 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
     end
 end
 
-function tprint(tbl, indent)
-    if not indent then indent = 0 end
-    for k, v in pairs(tbl) do
-        formatting = string.rep("  ", indent) .. tostring(k) .. ": "
-        if type(v) == "table" then
-            log_info(formatting)
-            tprint(v, indent+1)
-        else
-            log_info(formatting .. tostring(v))
-        end
+--------------------------------- GAMEPLAY
+function get_current_weapon(world_addr)
+    local cped = world_addr:add(0x8):deref()
+    if cped:is_null() then
+        log.warning("CPed address is null! Either the offset changed or something else is wrong.")
+        return false, 0
+    end
+    local wpn_mgr = cped:add(0x10B8):deref()
+    if wpn_mgr:is_null() then
+        log.warning("CPedWeaponManager address is null! Either the offset changed or something else is wrong.")
+        return false, 0
+    end
+    local cur_weap = wpn_mgr:add(0x18):get_dword()
+    local has_weap = false
+    if wpn_mgr:add(0x20):deref():is_valid() or wpn_mgr:add(0x70):deref():is_valid() then
+        has_weap = true
+    end
+    return has_weap, cur_weap
+end
+
+function toggle_attachment(curr_weap, attachment)
+    local playerPed = PLAYER.PLAYER_PED_ID()
+    if WEAPON.HAS_PED_GOT_WEAPON_COMPONENT(playerPed, curr_weap, attachment) then
+        WEAPON.REMOVE_WEAPON_COMPONENT_FROM_PED(playerPed, curr_weap, attachment)
+    else
+        WEAPON.GIVE_WEAPON_COMPONENT_TO_PED(playerPed, curr_weap, attachment)
     end
 end
 
-function print_hash(name)
-    log_info(name .. " hash is "..tostring(joaat(name)))
-end
-
-function register_attachments(xml, track, depth, components, attachment_registry)
-    track[depth] = xml.label
-    local isouter = false
-    if xml.xarg ~= nil and xml.xarg.type == "CWeaponInfo" then
-        track[depth] = xml.xarg.type
-        isouter = true
-    end
-    local weapon_name = nil
-    for _, item in pairs(xml) do
-        if isouter and item.label == "Name" then
-            weapon_name = item[1]
-        end
-        if type(item) == "table" then
-            if item.label == "Name" and track[2] == "AttachPoints" and track[4] == "Components" then
-                table.insert(components, item[1])
-            end
-            register_attachments(item, track, depth + 1, components, attachment_registry)
-        end
-    end
-    if isouter and weapon_name ~= nil then
-        local weapon_hash = joaat(weapon_name)
-        for k, item in pairs(components) do
-            if attachment_registry[weapon_hash] == nil then
-                attachment_registry[weapon_hash] = {Name=weapon_name}
-            end
-            table.insert(attachment_registry[weapon_hash], item)
-            components[k] = nil
-        end
-    end
-    track[depth] = nil
-end
-
+--------------------------------- MAIN INIT
 rawxml = ""
 lookup = {}
 prev_weapon = 0
-curr_weap = 0
 model_registry = {}
 attachment_registry = {}
 memory_patch_registry = {}
 world_ptr = get_world_addr()
-playerPed = 0
-
-function restore_patches()
-    for i,p in ipairs(memory_patch_registry) do
-        p:restore()
-    end
-end
 
 function reload_meta()
     -- reset everything
@@ -376,7 +365,6 @@ function reload_meta()
     lookup = transform(rawxml, model_registry)
     register_attachments(rawxml, {}, 0, {}, attachment_registry)
     log_info("weaponsmeta.lua reloaded.")
-    has_weap, curr_weap = WEAPON.GET_CURRENT_PED_WEAPON(playerPed, curr_weap)
 end
 
 reload_meta()
@@ -384,14 +372,7 @@ reload_meta()
 -- tprint(lookup)
 -- tprint(attachment_registry)
 
-function toggle_attachment(playerPed, curr_weap, attachment)
-    if WEAPON.HAS_PED_GOT_WEAPON_COMPONENT(playerPed, curr_weap, attachment) then
-        WEAPON.REMOVE_WEAPON_COMPONENT_FROM_PED(playerPed, curr_weap, attachment)
-    else
-        WEAPON.GIVE_WEAPON_COMPONENT_TO_PED(playerPed, curr_weap, attachment)
-    end
-end
-
+--------------------------------- GUI
 myTab:add_imgui(function()
     enabled, Toggled = ImGui.Checkbox("Enabled##weaponeditor", enabled)
 
@@ -405,6 +386,7 @@ myTab:add_imgui(function()
     end
 
     ImGui.Text("Current Weapon:")
+    local has_weap, curr_weap = get_current_weapon(world_ptr)
     if has_weap and attachment_registry[curr_weap] ~= nil then
         ImGui.SameLine()
         ImGui.Text(attachment_registry[curr_weap].Name)
@@ -416,7 +398,7 @@ myTab:add_imgui(function()
         if has_weap and attachment_registry[curr_weap] ~= nil then
             for i, name in ipairs(attachment_registry[curr_weap]) do
                 if ImGui.Selectable(name) then
-                    toggle_attachment(playerPed, curr_weap, joaat(name))
+                    toggle_attachment(curr_weap, joaat(name))
                 end
             end
         end
@@ -427,26 +409,18 @@ end)
 
 event.register_handler(menu_event.PlayerMgrInit, function ()
     world_ptr = get_world_addr()
-    playerPed = PLAYER.PLAYER_PED_ID()
 end)
 
-script.register_looped("weaponloop", function (script)
-    script:yield() -- necessary for numbers to update
-    -- if Toggled then
-    --     debug(script)
-    -- end
+script.register_looped("weaponloop", function (sc)
+    sc:yield() -- necessary for numbers to update
 
-    -- on weapon changed
     if not enabled then
         return
     end
-    while not ENTITY.DOES_ENTITY_EXIST(playerPed) do
-        playerPed = PLAYER.PLAYER_PED_ID()
-        script:yield()
-    end
-
-    has_weap, curr_weap = WEAPON.GET_CURRENT_PED_WEAPON(playerPed, curr_weap)
+    -- on weapon changed
+    local has_weap, curr_weap = get_current_weapon(world_ptr)
     if has_weap and curr_weap ~= prev_weapon then
+        prev_weapon = curr_weap
         local wpn_info_addr = get_wpn_info_addr(world_ptr)
         if wpn_info_addr == nil then
             return
@@ -464,8 +438,6 @@ script.register_looped("weaponloop", function (script)
             -- apply CAmmoInfo changes
             apply_weapons_meta(script, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
         end
-        prev_weapon = curr_weap
     end
-    script:sleep(200)
 end)
 

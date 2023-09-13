@@ -408,3 +408,45 @@ gta_offset_types = {
         RotateBarrelBone2={0x098a, "enum16"}
     },
 }
+
+function get_world_addr()
+    local world_base = memory.scan_pattern("48 8B 05 ? ? ? ? 45 ? ? ? ? 48 8B 48 08 48 85 C9 74 07")
+    if world_base:is_null() then
+        log.warning("World address is null! Either the pattern changed or something else is wrong.")
+    end
+    local world_offset = world_base:add(3):get_dword()
+    local world_addr = world_base:add(world_offset + 7)
+    if world_addr:is_null() then
+        log.warning("World address is null! Either the pattern changed or something else is wrong.")
+        return nil
+    end
+    return world_addr:deref()
+end
+
+function get_wpn_info_addr(world_addr)
+    -- world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
+    local addr1 = world_addr:add(0x8):deref()
+    if addr1:is_null() then
+        log.warning("CPed address is null! Either the offset changed or something else is wrong.")
+        return nil
+    end
+    local addr2 = addr1:add(0x10B8):deref()
+    if addr2:is_null() then
+        log.warning("CPedWeaponManager address is null! Either the offset changed or something else is wrong.")
+        return nil
+    end
+    local addr3 = addr2:add(0x20):deref()
+    if addr3:is_null() then
+        log.warning("CWeaponInfo address is null! Either the offset changed or something else is wrong.")
+        return nil
+    end
+    return addr3
+end
+
+function get_ammo_info_addr(wpn_info_addr)
+    local addr = wpn_info_addr:add(0x60):deref()
+    if addr:is_null() then -- e.g. melee weapons is null
+        return nil
+    end
+    return addr
+end

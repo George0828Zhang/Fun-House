@@ -3,6 +3,9 @@
 Some Yimmenu scripts I made (for research & fun purposes).
 
 ## Mods
+### ObjectSpoofer
+Replaces certain models with certain new ones, configurable.
+
 ### Freight
 - Vehicle tab.
 - Spawn a freight to drive on the street.
@@ -13,20 +16,8 @@ Some Yimmenu scripts I made (for research & fun purposes).
 ### Jet Cannon
 - Auto bypasses the lazer/hydra cannon nerf from mercernaries dlc.
 
-### CustomStickyBombs
-<img src="demolition.png" alt="drawing" width="250"/>
-
-- Self->Weapons tab.
-- Replaces your sticky bombs with demolition charges from heists.
-- Object model & explosion type configurable. 
-- Would recommend Self->Weapons->Increase Sticky Limit to 50.
-
-### WeaponAddons
-
-- Self->Weapons tab.
-- Fire Ammo: enable the fireammo cheat from SP.
-- Gangsta Aim: enable gangsta aim with vanilla pistol (only).
-- Anti-Vehicle Gun: shoot once to kill engine of any vehicle. (= context menu->killengine, but automatic)
+### GangstaAim
+- Aim pistol mk1&2 like a gangsta.
 
 ### Wolverine
 - Self tab.
@@ -50,3 +41,4 @@ Some Yimmenu scripts I made (for research & fun purposes).
 - [UnknownCheats (globals & locals)](https://www.unknowncheats.me/forum/grand-theft-auto-v/500059-globals-locals-discussion-read-page-1-a.html)
 - [GTA5TunersGenZ (thermal bypass)](https://www.unknowncheats.me/forum/downloads.php?do=file&id=41096)
 - [NativeDB](https://alloc8or.re/gta5/nativedb/)
+- [pointers](https://www.unknowncheats.me/forum/grand-theft-auto-v/496174-worldptr.html) and [offsets1](https://github.com/Yimura/GTAV-Classes) [2](https://alexguirre.github.io/rage-parser-dumps/)
