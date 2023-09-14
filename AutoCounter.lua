@@ -109,24 +109,3 @@ script.register_looped("counterloop", function (sc)
     -- check each seconds
     sc:sleep(flare_interval_ms)
 end)
-
--- local myTab = gui.get_tab("Debug")
--- myTab:add_button("shoot self", function()
---     local playerPed = PLAYER.PLAYER_PED_ID()
---     local weap_hash = joaat("weapon_hominglauncher")
---     local offset_orig = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(
---         playerPed, 0, -300, -5)
---     local offset_dest = ENTITY.GET_OFFSET_FROM_ENTITY_IN_WORLD_COORDS(
---         playerPed, 0, 0, 0)
---     WEAPON.REQUEST_WEAPON_ASSET(weap_hash, 31, 0)
---     -- while not WEAPON.HAS_WEAPON_ASSET_LOADED(weap_hash) do script:yield() end
---     MISC.SHOOT_SINGLE_BULLET_BETWEEN_COORDS_IGNORE_ENTITY_NEW(
---             offset_orig.x,
---             offset_orig.y,
---             offset_orig.z,
---             offset_dest.x,
---             offset_dest.y,
---             offset_dest.z,
---     100, false, weap_hash, playerPed, true, false, 2000, nil, false, false, playerPed, false, 0, 0, 0) 
--- end)
-

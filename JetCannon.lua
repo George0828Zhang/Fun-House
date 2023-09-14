@@ -25,6 +25,6 @@ function patch(a, b, c)
 end
 
 
-event.register_handler(menu_event.PlayerMgrInit, function ()
+script.run_in_fiber(function (script)
     patch(0, -1, 0.03999999911)
 end)
