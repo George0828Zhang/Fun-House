@@ -61,7 +61,7 @@ gta_offset_types = {
         LightOnlyActiveWhenStuck={0x00d9, "bool"},
         LightFlickers={0x00da, "bool"},
         LightSpeedsUp={0x00db, "bool"},
-        LightBone={0x00dc, "enum16"},
+        LightBone={0x00dc, "gunbone"},
         LightColour={0x00e0, "vec3"},
         LightIntensity={0x00f0, "float"},
         LightRange={0x00f4, "float"},
@@ -387,7 +387,7 @@ gta_offset_types = {
             ItemSize=0x6c,
             Count={0x08f8, "int"}
         },
-        GunFeedBone={0x08fc, "enum16"},
+        GunFeedBone={0x08fc, "gunbone"},
         WeaponFlags={0x0900, "flags192"},
         -- TintSpecValues={0x0918, "STRUCT.EXTERNAL_NAMED"}, -- need deref
         -- FiringPatternAliases={0x0920, "STRUCT.EXTERNAL_NAMED"}, -- need deref
@@ -404,8 +404,8 @@ gta_offset_types = {
         AirborneAircraftLockOnMultiplier={0x0968, "float"},
         ArmouredVehicleGlassDamageOverride={0x096c, "float"},
         -- CamoDiffuseTexIdxs={0x0970, "MAP.ATBINARYMAP"}, -- need deref & map tricky
-        RotateBarrelBone={0x0988, "enum16"},
-        RotateBarrelBone2={0x098a, "enum16"}
+        RotateBarrelBone={0x0988, "gunbone"},
+        RotateBarrelBone2={0x098a, "gunbone"}
     },
 }
 
