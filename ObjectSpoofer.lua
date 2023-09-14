@@ -3,14 +3,22 @@ presets_text = {
     -- For objects see https://forge.plebmasters.de/objects
     -- Syntax:
     -- original_model={"ne_model", offset(x,y,z), rotation(x,y,z)},
-
-    w_ex_pe={"h4_prop_h4_ld_bomb_02a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, earth timer off
+    
+    w_ex_apmine={"h4_prop_h4_ld_bomb_02a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, earth timer off
+    w_ex_pe={"prop_cash_pile_01", vec3:new(0, 0, 0), vec3:new(90, 0, 90)}, 
     -- {"stt_prop_c4_stack", vec3:new(0, 0, 0.09), vec3:new(0, 0, 0)}, -- giant stack of c4
     -- {"ch_prop_ch_ld_bomb_01a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, earth timer on
     -- {"h4_prop_h4_ld_bomb_01a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, green
     w_ex_pipebomb={"hei_prop_heist_thermite_flash", vec3:new(0, 0, 0), vec3:new(90, 0, 0)}, -- thermite timer on
     w_me_gclub={"prop_tool_sledgeham", vec3:new(0, 0, 0), vec3:new(-3, 0, 0)},
-    w_me_bat={"prop_tool_shovel2", vec3:new(0, 0.07, 0.85), vec3:new(180, 0, 0)}
+    w_me_bat={"prop_tool_shovel2", vec3:new(0, 0.07, 0.85), vec3:new(180, 0, 0)},
+    w_me_stonehatchet={"prop_tool_pickaxe", vec3:new(0, 0, -0.25), vec3:new(0, 0, 0)},
+    w_me_bottle={"prop_cs_katana_01", vec3:new(0.035, 0, 0), vec3:new(-90, 0, 0)},
+
+    w_me_machette_lr={"prop_ld_w_me_machette", vec3:new(0, 0, 0), vec3:new(0, 0, 0)},
+    w_sb_compactsmg={"prop_tool_nailgun", vec3:new(-0.06, -0.02, 0), vec3:new(0, 0, 180)},
+    -- 
+    w_me_hatchet={"prop_cleaver", vec3:new(0.02, 0.02, 0.15), vec3:new(90, 0, 0)},
 }
 
 function tprint(tbl, indent)
@@ -25,9 +33,6 @@ function tprint(tbl, indent)
         end
     end
 end
-
--- tprint(presets_text)
-
 
 -- optimize presets
 presets = {}
@@ -46,8 +51,6 @@ for k, v in pairs(presets_text) do
     presets[k_hash] = v
     ::continue::
 end
-
-tprint(presets)
 
 function spawn_obj(sc, entity, hash, offset, rot)
     STREAMING.REQUEST_MODEL(hash)

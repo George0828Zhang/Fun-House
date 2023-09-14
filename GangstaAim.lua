@@ -5,3 +5,4 @@ function apply(script)
 end
 
 script.run_in_fiber(apply)
+event.register_handler(menu_event.PlayerMgrInit, apply)
