@@ -123,6 +123,7 @@ gta_offset_types = {
     CWeaponInfo={
         Model={0x0014, "hash"},
         Audio={0x0018, "hash"},
+        Slot={0x001C, "hash"},
         DamageType={0x0020, "enum"},
         Explosion={
             _base=0x0024,

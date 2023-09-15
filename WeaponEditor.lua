@@ -249,9 +249,15 @@ function register_attachments(xml, track, depth, components, attachment_registry
 end
 
 --------------------------------- MEMORY PATCHING
-function restore_patches(script)
+function restore_patches()
     for _, p in pairs(memory_patch_registry) do
         p:restore()
+    end
+end
+
+function reapply_patches()
+    for _, p in pairs(memory_patch_registry) do
+        p:apply()
     end
 end
 
@@ -262,6 +268,14 @@ function try_load(script, model, looktype)
     STREAMING.REQUEST_MODEL(model)
     while not STREAMING.HAS_MODEL_LOADED(model) do script:yield() end
     log_info("[debug]["..looktype.."] loaded model "..tostring(model))
+end
+
+memory.pointer.patch_float = function(self, value)
+    local back = self:get_dword()
+    self:set_float(value)
+    local f2d = self:get_dword()
+    self:set_dword(back)
+    return self:patch_dword(f2d)
 end
 
 function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, model_registry, memory_patch_registry)
@@ -279,11 +293,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
             end
             patches[1] = wpn_field_addr:patch_dword(v.val)
         elseif v.gtatype == "float" then
-            local back = wpn_field_addr:get_dword()
-            wpn_field_addr:set_float(v.val)
-            local f2d = wpn_field_addr:get_dword()
-            wpn_field_addr:set_dword(back)
-            patches[1] = wpn_field_addr:patch_dword(f2d)
+            patches[1] = wpn_field_addr:patch_float(v.val)
         elseif v.gtatype == "qword" then
             patches[1] = wpn_field_addr:patch_qword(v.val)
         elseif v.gtatype == "bitset192" then
@@ -387,13 +397,13 @@ function toggle_attachment(curr_weap, attachment, force_true)
 end
 
 --------------------------------- MAIN INIT
-function reload_meta(script)
+function reload_meta()
     -- reset everything
     prev_weapon = 0 -- forces update on meta changed
     model_registry = {}
     attachment_registry = {}
 
-    restore_patches(script)
+    restore_patches()
     memory_patch_registry = {}
 
     package.loaded.weaponsmeta = nil
@@ -404,31 +414,33 @@ function reload_meta(script)
     log_info("weaponsmeta.lua reloaded.")
 end
 
-script.run_in_fiber(function (script)
-    has_weap = false
-    curr_weap = 0
-    -- prev_weapon = 0
-    curr_weap_obj = 0
-    bone_registry = {}
-    memory_patch_registry = {}
-    world_ptr = get_world_addr()
-    reload_meta(script)
-    -- tprint(rawxml)
-    -- tprint(lookup)
-    -- tprint(attachment_registry)
-end)
+has_weap = false
+curr_weap = 0
+-- prev_weapon = 0
+curr_weap_obj = 0
+bone_registry = {}
+memory_patch_registry = {}
+world_ptr = get_world_addr()
+reload_meta()
+-- tprint(rawxml)
+-- tprint(lookup)
+-- tprint(attachment_registry)
 
 --------------------------------- GUI
 myTab:add_imgui(function()
     enabled, Toggled = ImGui.Checkbox("Enabled##weaponeditor", enabled)
 
-    if Toggled and not enabled then
-        script.run_in_fiber(restore_patches)
+    if Toggled then
+        if enabled then
+            reapply_patches()
+        else
+            restore_patches()
+        end
     end
 
     ImGui.SameLine()
     if ImGui.Button("Reload meta") then
-        script.run_in_fiber(reload_meta)
+        reload_meta()
     end
 
     attachmentCB, Toggled2 = ImGui.Checkbox("Default Attachments", attachmentCB)
@@ -449,9 +461,7 @@ myTab:add_imgui(function()
         if has_weap and attachment_registry[curr_weap] ~= nil then
             for i, pack in ipairs(attachment_registry[curr_weap]) do
                 if ImGui.Selectable(pack.Name) then
-                    script.run_in_fiber(function (script)
-                        toggle_attachment(curr_weap, joaat(pack.Name))
-                    end)
+                    toggle_attachment(curr_weap, joaat(pack.Name))
                 end
             end
         end
