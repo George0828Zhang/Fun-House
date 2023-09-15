@@ -249,15 +249,31 @@ function register_attachments(xml, track, depth, components, attachment_registry
 end
 
 --------------------------------- MEMORY PATCHING
-function restore_patches()
-    for _, p in pairs(memory_patch_registry) do
-        p:restore()
+function restore_patches(patch_registry)
+    if patch_registry == nil then return end
+    for _, mypatch in pairs(patch_registry) do
+        mypatch.obj:restore()
+        log_info(string.format(
+            "[debug][%s] restore 0x%x (pid=%s)",
+            mypatch.type, mypatch.offset, mypatch.id
+        ))
     end
 end
 
-function reapply_patches()
-    for _, p in pairs(memory_patch_registry) do
-        p:apply()
+function restore_all_patches()
+    for _, patch_registry in pairs(memory_patch_registry) do
+        restore_patches(patch_registry)
+    end
+end
+
+function reapply_patches(patch_registry)
+    if patch_registry == nil then return end
+    for _, mypatch in ipairs(patch_registry) do
+        mypatch.obj:apply()
+        log_info(string.format(
+            "[debug][%s] apply %s at 0x%x (pid=%s)",
+            mypatch.type, mypatch.value, mypatch.offset, mypatch.id
+        ))
     end
 end
 
@@ -279,72 +295,80 @@ memory.pointer.patch_float = function(self, value)
 end
 
 function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, model_registry, memory_patch_registry)
-    local data = lookup[looktype][curr_weap]
-    for k, v in pairs(data) do
-        local wpn_field_addr = base_addr:add(v.offset)
-        local patches = {}
-        if v.gtatype == "byte" then
-            patches[1] = wpn_field_addr:patch_byte(v.val)
-        elseif v.gtatype == "word" then
-            patches[1] = wpn_field_addr:patch_word(v.val)
-        elseif v.gtatype == "dword" then
-            if model_registry[v.val] ~= nil then
-                try_load(script, v.val, looktype)
+    if memory_patch_registry[curr_weap] == nil then
+        memory_patch_registry[curr_weap] = {}
+        local data = lookup[looktype][curr_weap]
+        for k, v in pairs(data) do
+            local wpn_field_addr = base_addr:add(v.offset)
+            local field_patches = {}
+            if v.gtatype == "byte" then
+                field_patches[1] = wpn_field_addr:patch_byte(v.val)
+            elseif v.gtatype == "word" then
+                field_patches[1] = wpn_field_addr:patch_word(v.val)
+            elseif v.gtatype == "dword" then
+                if model_registry[v.val] ~= nil then
+                    try_load(script, v.val, looktype)
+                end
+                field_patches[1] = wpn_field_addr:patch_dword(v.val)
+            elseif v.gtatype == "float" then
+                field_patches[1] = wpn_field_addr:patch_float(v.val)
+            elseif v.gtatype == "qword" then
+                field_patches[1] = wpn_field_addr:patch_qword(v.val)
+            elseif v.gtatype == "bitset192" then
+                local bitset64s = {0, 0, 0}
+                local debugmsg = "[debug]["..looktype.."][flags] bits="
+                for _, b in pairs(v.val) do
+                    local q = b // 64 + 1 -- lua 1-indexed
+                    local r = b % 64
+                    debugmsg = debugmsg..tostring(b).." "
+                    bitset64s[q] = bitset64s[q] | (1 << r)
+                end
+                log_info(debugmsg)
+                -- log_info("[debug]["..looktype.."][flags] bitset1="..tostring(bitset64s[1]))
+                for i = 1, 3 do
+                    field_patches[i] = wpn_field_addr:add((i-1)*8):patch_qword(bitset64s[i])
+                end
+            elseif v.gtatype == "bitset32" then
+                local bitset = 0
+                local debugmsg = "[debug]["..looktype.."][flags] bits="
+                for _, b in pairs(v.val) do
+                    debugmsg = debugmsg..tostring(b).." "
+                    bitset = bitset | (1 << b)
+                end
+                log_info(debugmsg)
+                field_patches[1] = wpn_field_addr:patch_dword(bitset)
+            -- elseif v.gtatype == "ref_ammo" and looktype == "CWeaponInfo" then
+            --     local curr_ammo = v.val
+            --     local ammo_info_addr = get_ammo_info_addr(base_addr)
+            --     if lookup.CAmmoInfo[curr_ammo] ~= nil then
+            --         -- recursive call
+            --         apply_weapons_meta(script, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
+            --     end
+            elseif v.gtatype == "gunbone" then
+                local bone_id = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(
+                    get_current_weapon_obj(world_addr), string.lower(v.val))
+                if bone_id ~= -1 then
+                    -- gunbone is 16bit
+                    field_patches[1] = wpn_field_addr:patch_word(bone_id)
+                end
             end
-            patches[1] = wpn_field_addr:patch_dword(v.val)
-        elseif v.gtatype == "float" then
-            patches[1] = wpn_field_addr:patch_float(v.val)
-        elseif v.gtatype == "qword" then
-            patches[1] = wpn_field_addr:patch_qword(v.val)
-        elseif v.gtatype == "bitset192" then
-            local bitset64s = {0, 0, 0}
-            local debugmsg = "[debug]["..looktype.."][flags] bits="
-            for _, b in pairs(v.val) do
-                local q = b // 64 + 1 -- lua 1-indexed
-                local r = b % 64
-                debugmsg = debugmsg..tostring(b).." "
-                bitset64s[q] = bitset64s[q] | (1 << r)
+            for i,p in ipairs(field_patches) do
+                local mypatch = {
+                    id=tostring(p):gsub("sol.big::lua_patch.:", "0x"):gsub("%s+0*", ""),
+                    offset=v.offset,
+                    value=tostring(v.val),
+                    type=looktype,
+                    obj=p
+                }
+                table.insert(memory_patch_registry[curr_weap], mypatch)
+                log_info(string.format(
+                    "[debug][%s] Patch %s at 0x%x.",
+                    mypatch.type, mypatch.id, mypatch.offset
+                ))
             end
-            log_info(debugmsg)
-            -- log_info("[debug]["..looktype.."][flags] bitset1="..tostring(bitset64s[1]))
-            for i = 1, 3 do
-                patches[i] = wpn_field_addr:add((i-1)*8):patch_qword(bitset64s[i])
-            end
-        elseif v.gtatype == "bitset32" then
-            local bitset = 0
-            local debugmsg = "[debug]["..looktype.."][flags] bits="
-            for _, b in pairs(v.val) do
-                debugmsg = debugmsg..tostring(b).." "
-                bitset = bitset | (1 << b)
-            end
-            log_info(debugmsg)
-            patches[1] = wpn_field_addr:patch_dword(bitset)
-        -- elseif v.gtatype == "ref_ammo" and looktype == "CWeaponInfo" then
-        --     local curr_ammo = v.val
-        --     local ammo_info_addr = get_ammo_info_addr(base_addr)
-        --     if lookup.CAmmoInfo[curr_ammo] ~= nil then
-        --         -- recursive call
-        --         apply_weapons_meta(script, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
-        --     end
-        elseif v.gtatype == "gunbone" then
-            local bone_id = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(
-                get_current_weapon_obj(world_addr), string.lower(v.val))
-            if bone_id ~= -1 then
-                -- gunbone is 16bit
-                patches[1] = wpn_field_addr:patch_word(bone_id)
-            end
-        end
-        local _addr = wpn_field_addr:get_address()
-        for i,p in ipairs(patches) do
-            p:apply()
-            memory_patch_registry[_addr] = p
-            _addr = _addr + 8
-            log_info(string.format(
-                "[debug][%s] Applied %s at 0x%x (patch=%s)",
-                looktype, tostring(v.val), v.offset, tostring(p):gsub("sol.big::lua_patch.: ", "")
-            ))
-        end
-    end
+        end-- for
+    end-- if
+    reapply_patches(memory_patch_registry[curr_weap])
 end
 
 --------------------------------- GAMEPLAY
@@ -403,7 +427,7 @@ function reload_meta()
     model_registry = {}
     attachment_registry = {}
 
-    restore_patches()
+    restore_all_patches()
     memory_patch_registry = {}
 
     package.loaded.weaponsmeta = nil
@@ -432,9 +456,9 @@ myTab:add_imgui(function()
 
     if Toggled then
         if enabled then
-            reapply_patches()
+            reapply_patches(memory_patch_registry[curr_weap])
         else
-            restore_patches()
+            restore_all_patches()
         end
     end
 
@@ -496,7 +520,7 @@ script.register_looped("weaponloop", function (sc)
         prev_weapon = curr_weap
 
         if not enabled then
-            return
+            goto skipapply
         end
         -- apply CWeaponInfo changes
         local wpn_info_addr = get_wpn_info_addr(world_ptr)
@@ -526,6 +550,7 @@ script.register_looped("weaponloop", function (sc)
             apply_weapons_meta(sc, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
         end
     end
+    ::skipapply::
     -- debug
     -- get bones
     bone_registry = {}
