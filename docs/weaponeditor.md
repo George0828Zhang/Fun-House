@@ -1,5 +1,6 @@
 # Weapon Editor
-This mod allows you to stream modded `weapons.meta`` to the game while it's running. i.e. You can mod weapon stats without changing game files.
+This mod allows you to stream modded `weapons.meta` to the game while it's running. i.e. You can mod weapon stats without changing game files.
+
 ## Basics
 The file `weaponsmeta.lua` contains a multiline string:
 ```lua
@@ -12,11 +13,11 @@ weaponsmeta = [[
 </Item>
 ]]
 ```
-All you need is to put modded items in the string. The mod will load them. All values in `lib/gtaoffsets` are supported.
+All you need is to put modded items in the string. The mod will load on start or when you press `Reload meta`. All values in `lib/gtaoffsets` are supported.
 
 Only include the items under `<Infos>`, i.e. `<Item type="CAmmoInfo">` or `<Item type="CWeaponInfo">`. Don't include e.g. `<CWeaponInfoBlob>`. See the included `weaponsmeta.lua` in the repo for a concrete example.
 
-You don't need the complete Infos in `weapons.meta`. Just put the modified fields and values. Two exceptions to this are `<AttachPoints>` and `<WeaponFlags>`, for them you need to include the complete input.
+You don't need the complete Infos in `weapons.meta`. Just put the modified fields and values. Two exceptions to this are `<AttachPoints>` and `<WeaponFlags>`, for them you need to include the complete list of values.
 
 Checkout this tutorial for the meanings of each value: https://forums.gta5-mods.com/topic/36832/tutorial-basic-editing-of-weapons-meta
 
@@ -113,3 +114,15 @@ For example, you can add new scopes for any weapon with `<AttachBone>WAPScop</At
 ```
 Here are more components: https://wiki.rage.mp/index.php?title=Weapons_Components
 
+## Conflicts
+- Rule of thumb: If you want global effect on all weapons -> go with Yimmenu options.
+- Undefined just means two values will be set back and forth.
+
+|  weaponsmeta field    | Yimmenu |Behaviour|
+| -------- | ------- |-|
+| Explosion, AmmoSpecialType |   Self>Weapons>Enable Special Ammo  |Undefined|
+| WeaponRange |  Self>Weapons>Infinite Range |Undefined|
+| RecoilShakeAmplitude |  Self>Weapons>No Recoil |Undefined|
+| AccuracySpread |  Self>Weapons>No Spread|Undefined|
+| Damage, *DamageModifier |  Self>Weapons>Damage Override|Yimmenu overrides WeaponEditor|
+| VEHICLE_WEAPON_* (soon be added) |  Self>Vehicle>Fun Features>Custom vehicle Weapons|Undefined|
