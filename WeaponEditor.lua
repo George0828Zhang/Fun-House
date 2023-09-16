@@ -169,9 +169,6 @@ function parse_into_gta_form(offset_table, output_table, model_registry, value_p
             gta = "float"
             table.insert(output_table, {offset={val=offset.val+4, ref=offset.ref}, gtatype="float", val=tonumber(value_pack.xarg.y)})
             table.insert(output_table, {offset={val=offset.val+8, ref=offset.ref}, gtatype="float", val=tonumber(value_pack.xarg.z)})
-        -- elseif typ == "ref_ammo" then
-        --     value = joaat(value_pack.xarg.ref)
-        --     gta = "ref_ammo"
         elseif typ == "gunbone" then
             gta = "gunbone"
         else
@@ -356,16 +353,9 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
                 end
                 log_info(debugmsg)
                 field_patches[1] = wpn_field_addr:patch_dword(bitset)
-            -- elseif v.gtatype == "ref_ammo" and looktype == "CWeaponInfo" then
-            --     local curr_ammo = v.val
-            --     local ammo_info_addr = get_ammo_info_addr(base_addr)
-            --     if lookup.CAmmoInfo[curr_ammo] ~= nil then
-            --         -- recursive call
-            --         apply_weapons_meta(script, lookup, "CAmmoInfo", curr_ammo, ammo_info_addr, model_registry, memory_patch_registry)
-            --     end
             elseif v.gtatype == "gunbone" then
                 local bone_id = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(
-                    get_current_weapon_obj(world_addr), string.lower(v.val))
+                    get_current_weapon_obj(world_ptr), string.lower(tostring(v.val)))
                 if bone_id ~= -1 then
                     -- gunbone is 16bit
                     field_patches[1] = wpn_field_addr:patch_word(bone_id)

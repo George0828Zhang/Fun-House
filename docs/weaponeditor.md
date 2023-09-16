@@ -41,7 +41,8 @@ You can change the weapon model or audio like this:
 </Item>
 ```
 - For audio, the sound needs to have been played before.
-- For model, most of the time the model is either misaligned or outright won't appear. I recommend [ObjectSpoofer.lua](https://github.com/George0828Zhang/Fun-House/blob/main/ObjectSpoofer.lua) script for better way to replace weapon models.
+- For model, replacing similar guns works fine. Otherwise the new model might be misaligned or outright won't appear.
+  - For the latter I recommend [ObjectSpoofer.lua](https://github.com/George0828Zhang/Fun-House/blob/main/ObjectSpoofer.lua) script for better way to "replace" weapon models.
 
 ## Attachments
 You can add attachments to different guns by the following steps
