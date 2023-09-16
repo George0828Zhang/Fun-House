@@ -2,23 +2,27 @@ proximity = 50 -- only spoof object within proximity.
 presets_text = {
     -- For objects see https://forge.plebmasters.de/objects
     -- Syntax:
-    -- original_model={"ne_model", offset(x,y,z), rotation(x,y,z)},
-    
+    -- original_model={"new_model", offset(x,y,z), rotation(x,y,z)},
+    --
     w_ex_apmine={"h4_prop_h4_ld_bomb_02a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, earth timer off
-    w_ex_pe={"prop_cash_pile_01", vec3:new(0, 0, 0), vec3:new(90, 0, 90)}, 
-    -- {"stt_prop_c4_stack", vec3:new(0, 0, 0.09), vec3:new(0, 0, 0)}, -- giant stack of c4
-    -- {"ch_prop_ch_ld_bomb_01a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, earth timer on
-    -- {"h4_prop_h4_ld_bomb_01a", vec3:new(0, 0, 0), vec3:new(-90, 0, 0)}, -- satchel, green
+    w_ex_pe={"prop_cash_pile_01", vec3:new(0, 0, 0), vec3:new(90, 0, 90)},
     w_ex_pipebomb={"hei_prop_heist_thermite_flash", vec3:new(0, 0, 0), vec3:new(90, 0, 0)}, -- thermite timer on
+    
     w_me_gclub={"prop_tool_sledgeham", vec3:new(0, 0, 0), vec3:new(-3, 0, 0)},
+    w_me_dagger={"prop_cs_katana_01", vec3:new(0, 0, 0), vec3:new(0, 0, 0)},
     w_me_bat={"prop_tool_shovel2", vec3:new(0, 0.07, 0.85), vec3:new(180, 0, 0)},
-    w_me_stonehatchet={"prop_tool_pickaxe", vec3:new(0, 0, -0.25), vec3:new(0, 0, 0)},
-    w_me_bottle={"prop_cs_katana_01", vec3:new(0.035, 0, 0), vec3:new(-90, 0, 0)},
+    w_me_stonehatchet={"prop_cleaver", vec3:new(0.02, 0.02, 0.15), vec3:new(90, 0, 0)},
+    
 
     w_me_machette_lr={"prop_ld_w_me_machette", vec3:new(0, 0, 0), vec3:new(0, 0, 0)},
     w_sb_compactsmg={"prop_tool_nailgun", vec3:new(-0.06, -0.02, 0), vec3:new(0, 0, 180)},
-    -- 
-    w_me_hatchet={"prop_cleaver", vec3:new(0.02, 0.02, 0.15), vec3:new(90, 0, 0)},
+
+    w_me_hatchet={"prop_tool_pickaxe", vec3:new(0, 0, -0.25), vec3:new(0, 0, 0)},
+    w_me_poolcue={"prop_tool_broom", vec3:new(0, 0, 0.25), vec3:new(180, 0, 0)},
+    w_me_hammer={"prop_tool_mallet", vec3:new(0, 0, 0.15), vec3:new(0, 0, 0)},
+    w_me_bottle={"prop_tool_screwdvr01", vec3:new(0.05, 0.1, 0.0), vec3:new(90, 0, 0)},
+
+    w_at_scope_macro={"w_at_scope_nv", vec3:new(-0.05, 0, 0), vec3:new(0, 0, 0)},
 }
 
 function tprint(tbl, indent)
@@ -34,24 +38,6 @@ function tprint(tbl, indent)
     end
 end
 
--- optimize presets
-presets = {}
-for k, v in pairs(presets_text) do
-    local k_hash = joaat(k)
-    local v_hash = joaat(v[1])
-    if not STREAMING.IS_MODEL_VALID(k_hash) then
-        log.warning(string.format("%s (%d) is not valid model. Skipped.", k, k_hash))
-        goto continue
-    end
-    if not STREAMING.IS_MODEL_VALID(v_hash) then
-        log.warning(string.format("%s (%d) is not valid model. Skipped.", v[1], v_hash))
-        goto continue
-    end
-    v[1] = v_hash
-    presets[k_hash] = v
-    ::continue::
-end
-
 function spawn_obj(sc, entity, hash, offset, rot)
     STREAMING.REQUEST_MODEL(hash)
     while not STREAMING.HAS_MODEL_LOADED(hash) do sc:yield() end
@@ -65,7 +51,7 @@ function spawn_obj(sc, entity, hash, offset, rot)
         pj_coords.z,
         isNetwork,
         netMissionEntity,
-        true
+        false
     )
     STREAMING.SET_MODEL_AS_NO_LONGER_NEEDED(hash)
 
@@ -83,7 +69,6 @@ function spawn_obj(sc, entity, hash, offset, rot)
 
     ENTITY.SET_ENTITY_LOD_DIST(pj, ENTITY.GET_ENTITY_LOD_DIST(entity))
 
-    local unk = NETWORK.OBJ_TO_NET(pj) -- necessary?
     return pj
 end
 
@@ -139,8 +124,31 @@ function get_obj_pos(obj)
     return get_pos_from_addr(addr)
 end
 
-obj_record = {}
-world_addr = get_world_addr()
+function network_owned(obj)
+    return NETWORK.NETWORK_HAS_CONTROL_OF_ENTITY(obj)
+end
+
+script.run_in_fiber(function(script)
+    presets = {}
+    obj_record = {}
+    world_addr = get_world_addr()
+    -- optimize presets
+    for k, v in pairs(presets_text) do
+        local k_hash = joaat(k)
+        local v_hash = joaat(v[1])
+        if not STREAMING.IS_MODEL_VALID(k_hash) then
+            log.warning(string.format("%s (%d) is not valid model. Skipped.", k, k_hash))
+            goto continue
+        end
+        if not STREAMING.IS_MODEL_VALID(v_hash) then
+            log.warning(string.format("%s (%d) is not valid model. Skipped.", v[1], v_hash))
+            goto continue
+        end
+        v[1] = v_hash
+        presets[k_hash] = v
+        ::continue::
+    end
+end)
 
 script.register_looped("spoofloop", function (sc)
     sc:yield()
@@ -148,6 +156,7 @@ script.register_looped("spoofloop", function (sc)
     for k, v in pairs(obj_record) do
         if not ENTITY.DOES_ENTITY_EXIST(k) then
             if v ~= nil and ENTITY.DOES_ENTITY_EXIST(v) then
+                ENTITY.SET_ENTITY_AS_MISSION_ENTITY(ent,true,true)
                 ENTITY.DELETE_ENTITY(v)
             end
             obj_record[k] = nil
@@ -158,7 +167,7 @@ script.register_looped("spoofloop", function (sc)
     for model,repl_pack in pairs(presets) do
         local obj = OBJECT.GET_CLOSEST_OBJECT_OF_TYPE(ppos.x, ppos.y, ppos.z, proximity, model, false, false, false)
         local has_obj = obj ~= nil and ENTITY.DOES_ENTITY_EXIST(obj)
-        if has_obj and obj_record[obj] == nil then
+        if has_obj and obj_record[obj] == nil and network_owned(obj) then
             local repl_md = repl_pack[1]
             local repl_off = repl_pack[2]
             local repl_rot = repl_pack[3]
