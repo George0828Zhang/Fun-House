@@ -32,7 +32,7 @@ gta_offset_types = {
         VehicleRicochetTolerance={0x0074, "float"},
         FrictionMultiplier={0x0078, "float"},
         Explosion={
-            _base=0x007C,
+            _base={val=0x007C},
             Default={0x00, "enum"},
             HitCar={0x04, "enum"},
             HitTruck={0x08, "enum"},
@@ -126,7 +126,7 @@ gta_offset_types = {
         Slot={0x001C, "hash"},
         DamageType={0x0020, "enum"},
         Explosion={
-            _base=0x0024,
+            _base={val=0x0024},
             Default={0x00, "enum"},
             HitCar={0x04, "enum"},
             HitTruck={0x08, "enum"},
@@ -135,9 +135,9 @@ gta_offset_types = {
             HitPlane={0x14, "enum"}
         },
         FireType={0x0054, "enum"},
-        -- AmmoInfo={0x0060, "ref_ammo"}, -- can't change ref if new ammo's addr not known
-        -- AimingInfo={0x0068, "ref_aiming"}, -- tricky to handle
-        ClipSize={0x0070, "int"}, -- overridden by components, always
+        -- AmmoInfo={0x0060, "ref_ammo"}, -- named ref: can't change ref if new ammo's addr not known
+        -- AimingInfo={0x0068, "ref_aiming"},  -- named ref
+        ClipSize={0x0070, "int"},
         AccuracySpread={0x0074, "float"},
         AccurateModeAccuracyModifier={0x0078, "float"},
         RunAndGunAccuracyModifier={0x007c, "float"},
@@ -165,7 +165,17 @@ gta_offset_types = {
         ForceHitPed={0x00dc, "float"},
         ForceHitVehicle={0x00e0, "float"},
         ForceHitFlyingHeli={0x00e4, "float"},
-        -- OverrideForces={0x00e8, "ref_forces"}, -- atarray needs deref
+        OverrideForces={
+            0x00e8, "at_array",
+            ItemTemplate={
+                -- _base set at runtime
+                BoneTag={0x00, "enum"},
+                ForceFront={0x04, "float"},
+                ForceBack={0x08, "float"}
+            },
+            ItemSize=0xc,
+            Count={0x00f0, "int16"}
+        },
         ForceMaxStrengthMult={0x00f8, "float"},
         ForceFalloffRangeStart={0x00fc, "float"},
         ForceFalloffRangeEnd ={0x0100, "float"},
@@ -196,7 +206,7 @@ gta_offset_types = {
         FirstPersonBulletBendingFarRadius={0x0164, "float"},
         FirstPersonBulletBendingZoomedRadius={0x0168, "float"},
         Fx={
-            _base=0x0170,
+            _base={val=0x0170},
             EffectGroup={0x0, "enum"},
             FlashFx={0x4, "hash"},
             FlashFxAlt={0x8, "hash"},
@@ -295,18 +305,18 @@ gta_offset_types = {
         FirstPersonDofSubjectMagnificationPowerFactorNear={0x03f0, "float"},
         FirstPersonDofMaxNearInFocusDistance={0x03f4, "float"},
         FirstPersonDofMaxNearInFocusDistanceBlendLevel={0x03f8, "float"},
-        -- FirstPersonScopeAttachmentData={ -- ataray needs deref
-        --     0x0400, "ARRAY.ATARRAY",
-        --     ItemTemplate={
-        --         -- _base set at runtime
-        --         Name={0x00, "hash"},
-        --         FirstPersonScopeAttachmentFov={0x04, "float"},
-        --         FirstPersonScopeAttachmentOffset={0x10, "vec3"},
-        --         FirstPersonScopeAttachmentRotationOffset={0x20, "vec3"},
-        --     }
-        --     ItemSize=0x30,
-        --     Count={unknown, "int"}
-        -- }
+        FirstPersonScopeAttachmentData={
+            0x0400, "at_array",
+            ItemTemplate={
+                -- _base set at runtime
+                Name={0x00, "hash"},
+                FirstPersonScopeAttachmentFov={0x04, "float"},
+                FirstPersonScopeAttachmentOffset={0x10, "vec3"},
+                FirstPersonScopeAttachmentRotationOffset={0x20, "vec3"},
+            },
+            ItemSize=0x30,
+            Count={0x0408, "int16"}
+        },
         ZoomFactorForAccurateMode={0x0410, "float"},
         AimOffsetMin={0x0420, "vec3"},
         AimOffsetMax={0x0430, "vec3"},
@@ -390,9 +400,9 @@ gta_offset_types = {
         },
         GunFeedBone={0x08fc, "gunbone"},
         WeaponFlags={0x0900, "flags192"},
-        -- TintSpecValues={0x0918, "STRUCT.EXTERNAL_NAMED"}, -- need deref
-        -- FiringPatternAliases={0x0920, "STRUCT.EXTERNAL_NAMED"}, -- need deref
-        -- ReloadUpperBodyFixupExpressionData={0x0928, "STRUCT.EXTERNAL_NAMED"}, -- need deref
+        -- TintSpecValues={0x0918, "STRUCT.EXTERNAL_NAMED"}, -- named ref
+        -- FiringPatternAliases={0x0920, "STRUCT.EXTERNAL_NAMED"}, -- named ref
+        -- ReloadUpperBodyFixupExpressionData={0x0928, "STRUCT.EXTERNAL_NAMED"}, -- named ref
         TargetSequenceGroup={0x0930, "hash"},
         BulletDirectionOffsetInDegrees={0x0934, "float"},
         BulletDirectionPitchOffset={0x0938, "float"},
@@ -404,7 +414,7 @@ gta_offset_types = {
         MeleeRightFistTargetHealthDamageScaler={0x0964, "float"},
         AirborneAircraftLockOnMultiplier={0x0968, "float"},
         ArmouredVehicleGlassDamageOverride={0x096c, "float"},
-        -- CamoDiffuseTexIdxs={0x0970, "MAP.ATBINARYMAP"}, -- need deref & map tricky
+        -- CamoDiffuseTexIdxs={0x0970, "MAP.ATBINARYMAP"}, -- named ref + map(unk struct)
         RotateBarrelBone={0x0988, "gunbone"},
         RotateBarrelBone2={0x098a, "gunbone"}
     },

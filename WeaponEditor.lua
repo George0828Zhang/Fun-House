@@ -82,9 +82,13 @@ function parse_into_gta_form_array(offset_table, output_table, model_registry, v
     -- array syntax
     -- base, "array", ItemTemplate, count
     local key = value_pack.label
-    local offset = offset_table[key][1]
+    local offset = {val=offset_table[key][1]}
+    if offset_table[key][2] == "at_array" then
+        offset = {ref=offset_table[key][1], val=0}
+    end
     if offset_table._base ~= nil then
-        offset = offset + offset_table._base
+        offset.val = offset.val + offset_table._base.val
+        offset.ref = offset_table._base.ref -- TODO: what if at_array under at_array?
     end
 
     local inner_table = offset_table[key].ItemTemplate -- should be another table
@@ -92,15 +96,19 @@ function parse_into_gta_form_array(offset_table, output_table, model_registry, v
     local count = 0
     for _, value_item in ipairs(value_pack) do
         if value_item.label == "Item" then
-            inner_table._base = offset + count * interval
+            inner_table._base = {
+                val=offset.val + count * interval,
+                ref=offset.ref
+            }
             recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_item, parent_tag..key)
             count = count + 1
         end
     end
     -- handle count
-    local cnt_offset = offset_table[key].Count[1]
+    local cnt_offset = {val=offset_table[key].Count[1]}
     if offset_table._base ~= nil then
-        cnt_offset = cnt_offset + offset_table._base
+        cnt_offset.val = cnt_offset.val + offset_table._base.val
+        cnt_offset.ref = offset_table._base.ref
     end
     table.insert(output_table, {offset=cnt_offset, gtatype="word", val=count})
 end
@@ -114,18 +122,19 @@ function parse_into_gta_form(offset_table, output_table, model_registry, value_p
     if offset_table[key][1] == nil then
         local inner_table = offset_table[key] -- should be another table
         recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_pack, parent_tag..key)
-    elseif offset_table[key][2] == "array" then
+    elseif offset_table[key][2]:find("array") ~= nil then
         parse_into_gta_form_array(offset_table, output_table, model_registry, value_pack, parent_tag)
     else
         -- has offset + not array
-        local offset = offset_table[key][1]
+        local offset = {val=offset_table[key][1]}
         local typ = offset_table[key][2]
         local value = value_pack[1]
         if value_pack.empty and value_pack.xarg.value ~= nil then
             value = value_pack.xarg.value -- e.g. <ClipSize value="6" />
         end
         if offset_table._base ~= nil then
-            offset = offset + offset_table._base
+            offset.val = offset.val + offset_table._base.val
+            offset.ref = offset_table._base.ref
         end
         local gta = "dword" -- default
         if typ == "hash" then
@@ -154,12 +163,12 @@ function parse_into_gta_form(offset_table, output_table, model_registry, value_p
         elseif typ == "vec2" then
             value = tonumber(value_pack.xarg.x)
             gta = "float"
-            table.insert(output_table, {offset=offset + 4, gtatype="float", val=tonumber(value_pack.xarg.y)})
+            table.insert(output_table, {offset={val=offset.val+4, ref=offset.ref}, gtatype="float", val=tonumber(value_pack.xarg.y)})
         elseif typ == "vec3" then
             value = tonumber(value_pack.xarg.x)
             gta = "float"
-            table.insert(output_table, {offset=offset + 4, gtatype="float", val=tonumber(value_pack.xarg.y)})
-            table.insert(output_table, {offset=offset + 8, gtatype="float", val=tonumber(value_pack.xarg.z)})
+            table.insert(output_table, {offset={val=offset.val+4, ref=offset.ref}, gtatype="float", val=tonumber(value_pack.xarg.y)})
+            table.insert(output_table, {offset={val=offset.val+8, ref=offset.ref}, gtatype="float", val=tonumber(value_pack.xarg.z)})
         -- elseif typ == "ref_ammo" then
         --     value = joaat(value_pack.xarg.ref)
         --     gta = "ref_ammo"
@@ -249,13 +258,20 @@ function register_attachments(xml, track, depth, components, attachment_registry
 end
 
 --------------------------------- MEMORY PATCHING
+function print_offset(offset)
+    if offset.ref ~= nil then
+        return string.format("0x%x->0x%x", offset.ref, offset.val)
+    end
+    return string.format("0x%x", offset.val)
+end
+
 function restore_patches(patch_registry)
     if patch_registry == nil then return end
     for _, mypatch in pairs(patch_registry) do
         mypatch.obj:restore()
         log_info(string.format(
-            "[debug][%s] restore 0x%x (pid=%s)",
-            mypatch.type, mypatch.offset, mypatch.id
+            "[debug][%s] restore %s (pid=%s)",
+            mypatch.type, print_offset(mypatch.offset), mypatch.id
         ))
     end
 end
@@ -271,8 +287,8 @@ function reapply_patches(patch_registry)
     for _, mypatch in ipairs(patch_registry) do
         mypatch.obj:apply()
         log_info(string.format(
-            "[debug][%s] apply %s at 0x%x (pid=%s)",
-            mypatch.type, mypatch.value, mypatch.offset, mypatch.id
+            "[debug][%s] apply %s at %s (pid=%s)",
+            mypatch.type, mypatch.value, print_offset(mypatch.offset), mypatch.id
         ))
     end
 end
@@ -299,7 +315,10 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
         memory_patch_registry[curr_weap] = {}
         local data = lookup[looktype][curr_weap]
         for k, v in pairs(data) do
-            local wpn_field_addr = base_addr:add(v.offset)
+            local wpn_field_addr = base_addr:add(v.offset.val)
+            if v.offset.ref ~= nil then
+                wpn_field_addr = base_addr:add(v.offset.ref):deref():add(v.offset.val)
+            end
             local field_patches = {}
             if v.gtatype == "byte" then
                 field_patches[1] = wpn_field_addr:patch_byte(v.val)
@@ -362,8 +381,8 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
                 }
                 table.insert(memory_patch_registry[curr_weap], mypatch)
                 log_info(string.format(
-                    "[debug][%s] Patch %s at 0x%x.",
-                    mypatch.type, mypatch.id, mypatch.offset
+                    "[debug][%s] Patch %s at %s",
+                    mypatch.type, mypatch.id, print_offset(mypatch.offset)
                 ))
             end
         end-- for
@@ -456,7 +475,7 @@ myTab:add_imgui(function()
 
     if Toggled then
         if enabled then
-            reapply_patches(memory_patch_registry[curr_weap])
+            prev_weapon = 0 -- force reapply in weaponloop
         else
             restore_all_patches()
         end
