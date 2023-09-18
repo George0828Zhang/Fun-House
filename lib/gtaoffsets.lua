@@ -465,7 +465,6 @@ end
 -- dynamic addresses
 
 function get_wpn_info_addr(wpn_mgr_addr)
-    if wpn_mgr_addr == nil then wpn_mgr_addr = get_wpn_mgr_addr(world_addr) end
     if wpn_mgr_addr == nil then return nil end
     local addr = wpn_mgr_addr:add(0x20):deref()
     if addr:is_null() then

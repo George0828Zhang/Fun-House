@@ -358,7 +358,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
                 field_patches[1] = wpn_field_addr:patch_dword(bitset)
             elseif v.gtatype == "gunbone" then
                 local bone_id = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(
-                    get_current_weapon_obj(), string.lower(tostring(v.val)))
+                    get_current_weapon_obj(wpn_mgr_addr), string.lower(tostring(v.val)))
                 if bone_id ~= -1 then
                     -- gunbone is 16bit
                     field_patches[1] = wpn_field_addr:patch_word(bone_id)
@@ -384,9 +384,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
 end
 
 --------------------------------- GAMEPLAY
-function get_current_weapon()
-    if world_addr == nil then world_addr = get_world_addr() end
-    if wpn_mgr_addr == nil then wpn_mgr_addr = get_wpn_mgr_addr(world_addr) end
+function get_current_weapon(wpn_mgr_addr)
     if wpn_mgr_addr == nil then return false, 0 end
     -- dynamic
     local cur_weap = wpn_mgr_addr:add(0x18):get_dword()
@@ -398,9 +396,7 @@ function get_current_weapon()
     return has_weap, cur_weap
 end
 
-function get_current_weapon_obj()
-    if world_addr == nil then world_addr = get_world_addr() end
-    if wpn_mgr_addr == nil then wpn_mgr_addr = get_wpn_mgr_addr(world_addr) end
+function get_current_weapon_obj(wpn_mgr_addr)
     if wpn_mgr_addr == nil then return 0 end
     -- dynamic
     local cur_weap_obj_addr = wpn_mgr_addr:add(0x78):deref()
@@ -433,6 +429,16 @@ function request_assets(script)
     while not WEAPON.HAS_WEAPON_ASSET_LOADED(wpn_hash) do script:yield() end
 end
 
+function player_changed()
+    local curr_player = memory.ptr_to_handle(world_addr:add(0x8):deref())
+    if curr_player ~= prev_player then
+        log_debug("Player changed.")
+        prev_player = curr_player
+        return true
+    end
+    return false
+end
+
 --------------------------------- MAIN INIT
 function reload_meta()
     -- reset everything
@@ -458,6 +464,7 @@ curr_weap_obj = 0
 bone_registry = {}
 memory_patch_registry = {}
 reload_meta()
+world_addr = get_world_addr()
 -- tprint(rawxml)
 -- tprint(lookup)
 -- tprint(attachment_registry)
@@ -533,9 +540,11 @@ end)
 
 script.register_looped("weaponloop", function (sc)
     sc:yield() -- necessary for numbers to update
-
+    if player_changed() then
+        wpn_mgr_addr = get_wpn_mgr_addr(world_addr)
+    end
     -- on weapon changed
-    has_weap, curr_weap = get_current_weapon()
+    has_weap, curr_weap = get_current_weapon(wpn_mgr_addr)
     if has_weap and curr_weap ~= prev_weapon then
         prev_weapon = curr_weap
 
@@ -545,7 +554,7 @@ script.register_looped("weaponloop", function (sc)
         -- apply CWeaponInfo changes
         local wpn_info_addr = get_wpn_info_addr(wpn_mgr_addr)
         if wpn_info_addr == nil then
-            return
+            goto skipapply
         end
         if lookup.CWeaponInfo[curr_weap] ~= nil then
             apply_weapons_meta(sc, lookup, "CWeaponInfo", curr_weap, wpn_info_addr, model_registry, memory_patch_registry)
@@ -563,7 +572,7 @@ script.register_looped("weaponloop", function (sc)
         -- apply CAmmoInfo changes
         local ammo_info_addr = get_ammo_info_addr(wpn_info_addr)
         if ammo_info_addr == nil then
-            return
+            goto skipapply
         end
         local curr_ammo = ammo_info_addr:add(0x10):get_dword()
         if lookup.CAmmoInfo[curr_ammo] ~= nil then
@@ -574,7 +583,7 @@ script.register_looped("weaponloop", function (sc)
     -- debug
     -- get bones
     bone_registry = {}
-    curr_weap_obj = get_current_weapon_obj()
+    curr_weap_obj = get_current_weapon_obj(wpn_mgr_addr)
     if has_weap and curr_weap_obj ~= 0 then
         for _, bone_name in ipairs(gta_enums.WeaponBoneId) do
             local bone = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(curr_weap_obj, bone_name)
