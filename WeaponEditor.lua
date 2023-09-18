@@ -3,7 +3,8 @@
 --  read xml      http://lua-users.org/wiki/LuaXml
 --  print table   (hashmal)  https://gist.github.com/hashmal/874792
 --  worldpointer  (DDHibiki) https://www.unknowncheats.me/forum/grand-theft-auto-v/496174-worldptr.html
---  offsets       https://github.com/Yimura/GTAV-Classes & https://alexguirre.github.io/rage-parser-dumps/
+--  offsets       (Yimura) https://github.com/Yimura/GTAV-Classes
+--  offsets       (alexguirre) https://alexguirre.github.io/rage-parser-dumps/
 
 myTab = gui.get_tab("Weapon Editor") -- or put "GUI_TAB_WEAPONS"
 enabled = true
@@ -13,7 +14,6 @@ verbose = true
 require("lib/xmlreader")
 require("lib/gtaenums")
 require("lib/gtaoffsets")
-require("weaponsmeta")
 
 --------------------------------- DEBUG
 function log_info(msg)
@@ -40,35 +40,14 @@ function print_hash(name)
 end
 
 --------------------------------- PARSING
-function _handle_enum(name, value)
-    if name == "DamageType" then
-        return eDamageType[value]
-    elseif name:find("Explosion") ~= nil then
-        value = value:gsub("EXP_TAG_", "")
-        return eExplosion[value]
-    elseif name == "FireType" then
-        return eFireType[value]
-    elseif name == "EffectGroup" then
-        return eEffectGroup[value]
-    elseif name == "WeaponFlags" then
-        return eWeaponFlags[value]
-    elseif name == "AmmoSpecialType" then
-        return eAmmoSpecialType[value]
-    elseif name == "AmmoFlags" then
-        return eAmmoFlags[value]
-    elseif name == "ProjectileFlags" then
-        return eProjectileFlags[value]
-    elseif name:find("BoneTag") ~= nil then
-        return eAnimBoneTag[value]
-    end
-end
-
 function handle_enum(name, value)
-    local out = _handle_enum(name, value)
-    if out == nil then
-        log_info("[debug][enum] Unseen enum/flag: "..value.." in "..name)
+    for k, enum in pairs(gta_enums) do
+        if name:find(k) ~= nil then
+            return enum[value]
+        end
     end
-    return out
+    log.warning("[enum] Unseen enum/flag: "..value.." in "..name)
+    return nil
 end
 
 function recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_pack, next_tag)
@@ -100,7 +79,7 @@ function parse_into_gta_form_array(offset_table, output_table, model_registry, v
                 val=offset.val + count * interval,
                 ref=offset.ref
             }
-            recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_item, parent_tag..key)
+            recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_item, parent_tag.."."..key)
             count = count + 1
         end
     end
@@ -121,7 +100,7 @@ function parse_into_gta_form(offset_table, output_table, model_registry, value_p
 
     if offset_table[key][1] == nil then
         local inner_table = offset_table[key] -- should be another table
-        recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_pack, parent_tag..key)
+        recursive_parse_into_gta_form(inner_table, output_table, model_registry, value_pack, parent_tag.."."..key)
     elseif offset_table[key][2]:find("array") ~= nil then
         parse_into_gta_form_array(offset_table, output_table, model_registry, value_pack, parent_tag)
     else
@@ -141,9 +120,9 @@ function parse_into_gta_form(offset_table, output_table, model_registry, value_p
             value = joaat(value)
             model_registry[value] = 1
         elseif typ == "enum" then
-            value = handle_enum(parent_tag..key, value)
+            value = handle_enum(parent_tag.."."..key, value)
         elseif typ == "enum16" then
-            value = handle_enum(parent_tag..key, value)
+            value = handle_enum(parent_tag.."."..key, value)
             gta = "word"
         elseif typ == "int" then
             value = tonumber(value)
@@ -206,7 +185,12 @@ function transform(meta, model_registry)
                         parse_into_gta_form(gta_offset_types[item_type], data, model_registry, value_pack, "")
                     end
                 end
-                lookup[item_type][item_hash] = data
+                if item_hash == nil then
+                    log.warning(string.format(
+                        "Ignored an item of type %s missing <Name> field.", item.xarg.type))
+                else
+                    lookup[item_type][item_hash] = data
+                end
             end
         end
     end 
@@ -264,7 +248,7 @@ end
 
 function restore_patches(patch_registry)
     if patch_registry == nil then return end
-    for _, mypatch in pairs(patch_registry) do
+    for _, mypatch in ipairs(patch_registry) do
         mypatch.obj:restore()
         log_info(string.format(
             "[debug][%s] restore %s (pid=%s)",
@@ -355,7 +339,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
                 field_patches[1] = wpn_field_addr:patch_dword(bitset)
             elseif v.gtatype == "gunbone" then
                 local bone_id = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(
-                    get_current_weapon_obj(world_ptr), string.lower(tostring(v.val)))
+                    get_current_weapon_obj(), string.lower(tostring(v.val)))
                 if bone_id ~= -1 then
                     -- gunbone is 16bit
                     field_patches[1] = wpn_field_addr:patch_word(bone_id)
@@ -381,37 +365,26 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
 end
 
 --------------------------------- GAMEPLAY
-function get_current_weapon(world_addr)
-    local cped = world_addr:add(0x8):deref()
-    if cped:is_null() then
-        log.warning("CPed address is null! Either the offset changed or something else is wrong.")
-        return false, 0
-    end
-    local wpn_mgr = cped:add(0x10B8):deref()
-    if wpn_mgr:is_null() then
-        log.warning("CPedWeaponManager address is null! Either the offset changed or something else is wrong.")
-        return false, 0
-    end
-    local cur_weap = wpn_mgr:add(0x18):get_dword()
+function get_current_weapon()
+    if world_addr == nil then world_addr = get_world_addr() end
+    if wpn_mgr_addr == nil then wpn_mgr_addr = get_wpn_mgr_addr(world_addr) end
+    if wpn_mgr_addr == nil then return false, 0 end
+    -- dynamic
+    local cur_weap = wpn_mgr_addr:add(0x18):get_dword()
     local has_weap = false
-    if wpn_mgr:add(0x20):deref():is_valid() or wpn_mgr:add(0x70):deref():is_valid() then
+    -- yet to support vehicle weapons
+    if wpn_mgr_addr:add(0x20):deref():is_valid() then  -- or wpn_mgr_addr:add(0x70):deref():is_valid()
         has_weap = (cur_weap ~= 0xA2719263)
     end
     return has_weap, cur_weap
 end
 
-function get_current_weapon_obj(world_addr)
-    local cped = world_addr:add(0x8):deref()
-    if cped:is_null() then
-        log.warning("CPed address is null! Either the offset changed or something else is wrong.")
-        return 0
-    end
-    local wpn_mgr = cped:add(0x10B8):deref()
-    if wpn_mgr:is_null() then
-        log.warning("CPedWeaponManager address is null! Either the offset changed or something else is wrong.")
-        return 0
-    end
-    local cur_weap_obj_addr = wpn_mgr:add(0x78):deref()
+function get_current_weapon_obj()
+    if world_addr == nil then world_addr = get_world_addr() end
+    if wpn_mgr_addr == nil then wpn_mgr_addr = get_wpn_mgr_addr(world_addr) end
+    if wpn_mgr_addr == nil then return 0 end
+    -- dynamic
+    local cur_weap_obj_addr = wpn_mgr_addr:add(0x78):deref()
     if cur_weap_obj_addr:is_null() then
         return 0
     end
@@ -429,6 +402,18 @@ function toggle_attachment(curr_weap, attachment, force_true)
     end
 end
 
+function request_assets(script)
+    if wpn_text == nil then return end
+    log_info("[debug][asset] Requesting:"..wpn_text)
+    local wpn_hash = joaat(wpn_text)
+    if not WEAPON.IS_WEAPON_VALID(wpn_hash) then
+        log_info("invalid hash ("..tostring(wpn_hash)..")")
+        return
+    end
+    WEAPON.REQUEST_WEAPON_ASSET(wpn_hash, 31, 0)
+    while not WEAPON.HAS_WEAPON_ASSET_LOADED(wpn_hash) do script:yield() end
+end
+
 --------------------------------- MAIN INIT
 function reload_meta()
     -- reset everything
@@ -438,6 +423,7 @@ function reload_meta()
 
     restore_all_patches()
     memory_patch_registry = {}
+    collectgarbage("collect")
 
     package.loaded.weaponsmeta = nil
     require("weaponsmeta")
@@ -449,11 +435,9 @@ end
 
 has_weap = false
 curr_weap = 0
--- prev_weapon = 0
 curr_weap_obj = 0
 bone_registry = {}
 memory_patch_registry = {}
-world_ptr = get_world_addr()
 reload_meta()
 -- tprint(rawxml)
 -- tprint(lookup)
@@ -482,7 +466,6 @@ myTab:add_imgui(function()
     end
 
     ImGui.Text("Modded Weapon:")
-    -- local has_weap, curr_weap = get_current_weapon(world_ptr)
     if has_weap and attachment_registry[curr_weap] ~= nil then
         ImGui.SameLine()
         ImGui.Text(attachment_registry[curr_weap].Name)
@@ -503,10 +486,14 @@ myTab:add_imgui(function()
     end
 
     if ImGui.CollapsingHeader("Debug") then
+        verbose, Toggledverbose = ImGui.Checkbox("Verbose", verbose)
+        if ImGui.IsItemHovered() then
+            ImGui.SetTooltip("Toggle console debug messages.")
+        end
         ImGui.Text(string.format("Current Hash:%d", curr_weap))
         ImGui.Text(string.format("Object Handle:%d", curr_weap_obj))
         ImGui.Text("Bones")
-        if ImGui.BeginListBox("##bonelist", 420, 200) then
+        if ImGui.BeginListBox("##bonelist", 420, 150) then
             local i = 1
             while bone_registry[i] ~= nil do
                 ImGui.Selectable(string.format("%s (%d)",
@@ -517,6 +504,11 @@ myTab:add_imgui(function()
             end
             ImGui.EndListBox()
         end
+        wpn_text, _ = ImGui.InputText("##weaponasset", wpn_text or "WEAPON_", 50)
+        ImGui.SameLine()
+        if ImGui.Button("Request Assets") then
+            script.run_in_fiber(request_assets)
+        end
     end
 end)
 
@@ -524,7 +516,7 @@ script.register_looped("weaponloop", function (sc)
     sc:yield() -- necessary for numbers to update
 
     -- on weapon changed
-    has_weap, curr_weap = get_current_weapon(world_ptr)
+    has_weap, curr_weap = get_current_weapon()
     if has_weap and curr_weap ~= prev_weapon then
         prev_weapon = curr_weap
 
@@ -532,7 +524,7 @@ script.register_looped("weaponloop", function (sc)
             goto skipapply
         end
         -- apply CWeaponInfo changes
-        local wpn_info_addr = get_wpn_info_addr(world_ptr)
+        local wpn_info_addr = get_wpn_info_addr(wpn_mgr_addr)
         if wpn_info_addr == nil then
             return
         end
@@ -563,14 +555,12 @@ script.register_looped("weaponloop", function (sc)
     -- debug
     -- get bones
     bone_registry = {}
-    curr_weap_obj = get_current_weapon_obj(world_ptr)
-    if has_weap then
-        if curr_weap_obj ~= 0 then
-            for _, bone_name in ipairs(CWeaponBoneId) do
-                local bone = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(curr_weap_obj, bone_name)
-                if bone ~= -1 then
-                    table.insert(bone_registry, {Name=bone_name, ID=bone})
-                end
+    curr_weap_obj = get_current_weapon_obj()
+    if has_weap and curr_weap_obj ~= 0 then
+        for _, bone_name in ipairs(gta_enums.WeaponBoneId) do
+            local bone = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(curr_weap_obj, bone_name)
+            if bone ~= -1 then
+                table.insert(bone_registry, {Name=bone_name, ID=bone})
             end
         end
     end

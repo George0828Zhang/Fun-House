@@ -123,7 +123,7 @@ gta_offset_types = {
     CWeaponInfo={
         Model={0x0014, "hash"},
         Audio={0x0018, "hash"},
-        Slot={0x001C, "hash"},
+        Slot={0x001C, "hash"}, -- makes weapon unusable
         DamageType={0x0020, "enum"},
         Explosion={
             _base={val=0x0024},
@@ -134,7 +134,17 @@ gta_offset_types = {
             HitBoat={0x10, "enum"},
             HitPlane={0x14, "enum"}
         },
+        FrontClearTestParams={
+            _base={val=0x003C},
+            ShouldPerformFrontClearTest={0x00, "bool"},
+            ForwardOffset={0x04, "float"},
+            VerticalOffset={0x08, "float"},
+            HorizontalOffset={0x0c, "float"},
+            CapsuleRadius={0x10, "float"},
+            CapsuleLength={0x14, "float"}
+        },
         FireType={0x0054, "enum"},
+        WheelSlot={0x0058, "enum"},
         -- AmmoInfo={0x0060, "ref_ammo"}, -- named ref: can't change ref if new ammo's addr not known
         -- AimingInfo={0x0068, "ref_aiming"},  -- named ref
         ClipSize={0x0070, "int"},
@@ -420,10 +430,13 @@ gta_offset_types = {
     },
 }
 
+-- static addresses
+
 function get_world_addr()
     local world_base = memory.scan_pattern("48 8B 05 ? ? ? ? 45 ? ? ? ? 48 8B 48 08 48 85 C9 74 07")
     if world_base:is_null() then
         log.warning("World address is null! Either the pattern changed or something else is wrong.")
+        return nil
     end
     local world_offset = world_base:add(3):get_dword()
     local world_addr = world_base:add(world_offset + 7)
@@ -434,23 +447,31 @@ function get_world_addr()
     return world_addr:deref()
 end
 
-function get_wpn_info_addr(world_addr)
-    -- world_ptr:add(0x8):deref():add(0x10B8):deref():add(0x20):deref()
-    local addr1 = world_addr:add(0x8):deref()
-    if addr1:is_null() then
+function get_wpn_mgr_addr(world_addr)
+    if world_addr == nil then world_addr = get_world_addr() end
+    local cped = world_addr:add(0x8):deref()
+    if cped:is_null() then
         log.warning("CPed address is null! Either the offset changed or something else is wrong.")
         return nil
     end
-    local addr2 = addr1:add(0x10B8):deref()
-    if addr2:is_null() then
+    local wpn_mgr = cped:add(0x10B8):deref()
+    if wpn_mgr:is_null() then
         log.warning("CPedWeaponManager address is null! Either the offset changed or something else is wrong.")
         return nil
     end
-    local addr3 = addr2:add(0x20):deref()
-    if addr3:is_null() then
+    return wpn_mgr
+end
+
+-- dynamic addresses
+
+function get_wpn_info_addr(wpn_mgr_addr)
+    if wpn_mgr_addr == nil then wpn_mgr_addr = get_wpn_mgr_addr(world_addr) end
+    if wpn_mgr_addr == nil then return nil end
+    local addr = wpn_mgr_addr:add(0x20):deref()
+    if addr:is_null() then
         return nil
     end
-    return addr3
+    return addr
 end
 
 function get_ammo_info_addr(wpn_info_addr)
