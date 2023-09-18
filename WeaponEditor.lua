@@ -17,8 +17,11 @@ require("lib/gtaoffsets")
 
 --------------------------------- DEBUG
 function log_info(msg)
+    log.info(msg)
+end
+function log_debug(msg)
     if verbose then
-        log.info(msg)
+        log.debug(msg)
     end
 end
 
@@ -33,10 +36,6 @@ function tprint(tbl, indent)
             log_info(formatting .. tostring(v))
         end
     end
-end
-
-function print_hash(name)
-    log_info(name .. " hash is "..tostring(joaat(name)))
 end
 
 --------------------------------- PARSING
@@ -158,6 +157,20 @@ function parse_into_gta_form(offset_table, output_table, model_registry, value_p
     end
 end
 
+function recursive_look_for_items(meta, alias)
+    local valid_items = {}
+    for _, item in pairs(meta) do -- each <Item type=...>
+        if item.xarg ~= nil and item.xarg.type ~= nil and alias[item.xarg.type] ~= nil then
+            table.insert(valid_items, item)
+        elseif type(item) == "table" then
+            for _, subitem in pairs(recursive_look_for_items(item, alias)) do
+                table.insert(valid_items, subitem)
+            end
+        end
+    end
+    return valid_items
+end
+
 function transform(meta, model_registry)
     -- transform table into efficient lookup
     local lookup = {
@@ -171,29 +184,36 @@ function transform(meta, model_registry)
         CAmmoThrownInfo="CAmmoInfo",
         CAmmoRocketInfo="CAmmoInfo"
     }
-    for _, item in pairs(meta) do -- each <Item type=...>
-        if item.xarg ~= nil and item.xarg.type ~= nil then
-            local key = alias[item.xarg.type]
-            if lookup[key] ~= nil then
-                local item_hash = nil
-                local item_type = key
-                local data = {} -- {offset=, gtatype=, val=}
-                for _, value_pack in pairs(item) do -- each <Field>
-                    if value_pack.label == "Name" then
-                        item_hash = joaat(value_pack[1]) -- e.g. WEAPON_PISTOL
-                    elseif gta_offset_types[item_type] ~= nil then
-                        parse_into_gta_form(gta_offset_types[item_type], data, model_registry, value_pack, "")
-                    end
-                end
-                if item_hash == nil then
-                    log.warning(string.format(
-                        "Ignored an item of type %s missing <Name> field.", item.xarg.type))
-                else
-                    lookup[item_type][item_hash] = data
-                end
+    for _, item in pairs(recursive_look_for_items(meta, alias)) do -- each <Item type=...>
+        local item_name = nil
+        local item_type = alias[item.xarg.type]
+        local data = {} -- {offset=, gtatype=, val=}
+        for _, value_pack in pairs(item) do -- each <Field>
+            if value_pack.label == "Name" then
+                item_name = value_pack[1] -- e.g. WEAPON_PISTOL
+            elseif gta_offset_types[item_type] ~= nil then
+                parse_into_gta_form(gta_offset_types[item_type], data, model_registry, value_pack, "")
             end
         end
-    end 
+        if item_name == nil then
+            log.warning(string.format(
+                "Ignored an item of type %s missing <Name> field.", item.xarg.type))
+        else
+            data.Name = item_name
+            lookup[item_type][joaat(item_name)] = data
+        end
+    end
+    -- Item infos
+    local count = 0
+    for itype, items in pairs(lookup) do
+        local msg = string.format("Parsed %s items:", itype)
+        for _, x in pairs(items) do
+            msg = msg..x.Name.." "
+            count = count + 1
+        end
+        log_info(msg)
+    end
+    log_info(string.format("Parsed %d items into gta form.", count))
     return lookup
 end
 
@@ -250,8 +270,8 @@ function restore_patches(patch_registry)
     if patch_registry == nil then return end
     for _, mypatch in ipairs(patch_registry) do
         mypatch.obj:restore()
-        log_info(string.format(
-            "[debug][%s] restore %s (pid=%s)",
+        log_debug(string.format(
+            "[%s] restore %s (pid=%s)",
             mypatch.type, print_offset(mypatch.offset), mypatch.id
         ))
     end
@@ -267,8 +287,8 @@ function reapply_patches(patch_registry)
     if patch_registry == nil then return end
     for _, mypatch in ipairs(patch_registry) do
         mypatch.obj:apply()
-        log_info(string.format(
-            "[debug][%s] apply %s at %s (pid=%s)",
+        log_debug(string.format(
+            "[%s] apply %s at %s (pid=%s)",
             mypatch.type, mypatch.value, print_offset(mypatch.offset), mypatch.id
         ))
     end
@@ -280,7 +300,7 @@ function try_load(script, model, looktype)
     end
     STREAMING.REQUEST_MODEL(model)
     while not STREAMING.HAS_MODEL_LOADED(model) do script:yield() end
-    log_info("[debug]["..looktype.."] loaded model "..tostring(model))
+    log_debug("["..looktype.."] loaded model "..tostring(model))
 end
 
 memory.pointer.patch_float = function(self, value)
@@ -295,7 +315,7 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
     if memory_patch_registry[curr_weap] == nil then
         memory_patch_registry[curr_weap] = {}
         local data = lookup[looktype][curr_weap]
-        for k, v in pairs(data) do
+        for k, v in ipairs(data) do
             local wpn_field_addr = base_addr:add(v.offset.val)
             if v.offset.ref ~= nil then
                 wpn_field_addr = base_addr:add(v.offset.ref):deref():add(v.offset.val)
@@ -316,26 +336,25 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
                 field_patches[1] = wpn_field_addr:patch_qword(v.val)
             elseif v.gtatype == "bitset192" then
                 local bitset64s = {0, 0, 0}
-                local debugmsg = "[debug]["..looktype.."][flags] bits="
+                local debugmsg = "["..looktype.."][flags] bits="
                 for _, b in pairs(v.val) do
                     local q = b // 64 + 1 -- lua 1-indexed
                     local r = b % 64
                     debugmsg = debugmsg..tostring(b).." "
                     bitset64s[q] = bitset64s[q] | (1 << r)
                 end
-                log_info(debugmsg)
-                -- log_info("[debug]["..looktype.."][flags] bitset1="..tostring(bitset64s[1]))
+                log_debug(debugmsg)
                 for i = 1, 3 do
                     field_patches[i] = wpn_field_addr:add((i-1)*8):patch_qword(bitset64s[i])
                 end
             elseif v.gtatype == "bitset32" then
                 local bitset = 0
-                local debugmsg = "[debug]["..looktype.."][flags] bits="
+                local debugmsg = "["..looktype.."][flags] bits="
                 for _, b in pairs(v.val) do
                     debugmsg = debugmsg..tostring(b).." "
                     bitset = bitset | (1 << b)
                 end
-                log_info(debugmsg)
+                log_debug(debugmsg)
                 field_patches[1] = wpn_field_addr:patch_dword(bitset)
             elseif v.gtatype == "gunbone" then
                 local bone_id = ENTITY.GET_ENTITY_BONE_INDEX_BY_NAME(
@@ -354,8 +373,8 @@ function apply_weapons_meta(script, lookup, looktype, curr_weap, base_addr, mode
                     obj=p
                 }
                 table.insert(memory_patch_registry[curr_weap], mypatch)
-                log_info(string.format(
-                    "[debug][%s] Patch %s at %s",
+                log_debug(string.format(
+                    "[%s] Patch %s at %s",
                     mypatch.type, mypatch.id, print_offset(mypatch.offset)
                 ))
             end
@@ -404,10 +423,10 @@ end
 
 function request_assets(script)
     if wpn_text == nil then return end
-    log_info("[debug][asset] Requesting:"..wpn_text)
+    log_debug("[asset] Requesting:"..wpn_text)
     local wpn_hash = joaat(wpn_text)
     if not WEAPON.IS_WEAPON_VALID(wpn_hash) then
-        log_info("invalid hash ("..tostring(wpn_hash)..")")
+        log_debug("[asset] invalid weapon ("..tostring(wpn_hash)..")")
         return
     end
     WEAPON.REQUEST_WEAPON_ASSET(wpn_hash, 31, 0)
