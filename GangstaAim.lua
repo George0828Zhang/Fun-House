@@ -1,8 +1,13 @@
 
-function apply(script)
+function apply()
     local playerPed = PLAYER.PLAYER_PED_ID()
-    WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(playerPed, joaat("Gang1H"))
+    if playerPed ~= prev_player then
+        prev_player = curr_player
+        WEAPON.SET_WEAPON_ANIMATION_OVERRIDE(playerPed, joaat("Gang1H"))
+    end
 end
 
-script.run_in_fiber(apply)
-event.register_handler(menu_event.PlayerMgrInit, apply)
+script.register_looped("gangstaloop", function (script)
+    script:yield()
+    apply()
+end)

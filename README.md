@@ -3,9 +3,9 @@
 Some Yimmenu scripts I made (for research & fun purposes).
 
 ## Mods
-- [WeaponEditor](docs/weaponeditor.md): Stream modded weapons.meta to your game while playing.
-    - Requires `lib/*`
-- ObjectSpoofer: Replaces objects with new looks. e.g. Replace golfclub with a sledgehammer. Note: whether the change is visible to other players is unknown ATM.
+- WeaponEditor: Moved to https://github.com/YimMenu-Lua/Weapon-Editor
+- ObjectSpoofer: Replaces objects with new looks. e.g. Replace golfclub with a sledgehammer.
+    - Whether it's visible to other players is unknown.
 - AutoCounter: Shoot flares from any vehicle when missiles approach.
 - Thermal: Turn on/off thermal with E when aiming any gun (just like mk2 sniper).
 - JetCannon: Bypass the lazer/hydra cannon nerf from 1.67.
