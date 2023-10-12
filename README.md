@@ -3,6 +3,7 @@
 Some Yimmenu scripts I made (for research & fun purposes).
 
 ## Mods
+- DiableExplosionShake: block camera shake for all explosions (Settings->Protection tab).
 - WeaponEditor: Moved to https://github.com/YimMenu-Lua/Weapon-Editor
 - ObjectSpoofer: Replaces objects with new looks. e.g. Replace golfclub with a sledgehammer.
     - Whether it's visible to other players is unknown.
