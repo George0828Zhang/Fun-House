@@ -44,7 +44,7 @@ local counter_range = 200
 local invisible = false
 
 function is_approaching(playerPed, pl_coords, proj)
-    local proj_coords = ENTITY.GET_ENTITY_COORDS(proj)
+    local proj_coords = ENTITY.GET_ENTITY_COORDS(proj, true)
     local proj_vel = ENTITY.GET_ENTITY_VELOCITY(proj)
 
     local d_x = pl_coords.x - proj_coords.x
@@ -89,7 +89,7 @@ script.register_looped("counterloop", function (sc)
     sc:yield() -- necessary numbers to update
      
     local playerPed = PLAYER.PLAYER_PED_ID()
-    local pl_coords = ENTITY.GET_ENTITY_COORDS(playerPed)
+    local pl_coords = ENTITY.GET_ENTITY_COORDS(playerPed, true)
     
     for name, v in pairs(projectiles) do
         local proj = OBJECT.GET_CLOSEST_OBJECT_OF_TYPE(pl_coords.x, pl_coords.y, pl_coords.z, counter_range, v, false, false, false)

@@ -3,13 +3,13 @@ settings = {
         enable=true,
         low=128, --128 (very low) 312 (full) set to ~85% to avoid sus
         high=285,
-        rate={30, 20}
+        rate={10, 1}
     },
     armour={
         enable=true,
         low=10,
         high=75,
-        rate={8, 10}
+        rate={10, 1}
     },
     headshot_pf = true
 }
@@ -51,7 +51,7 @@ function heal_by_type(playerPed, setting, frame, get_func, set_func)
         elseif frame % setting.rate[2] == 0 and curr < setting.high then
             target = curr + setting.rate[1]
         end
-        set_func(playerPed, target)
+        set_func(playerPed, target, 0, 0)
     end
 end
 
@@ -70,7 +70,7 @@ script.register_looped("wolverineloops", function (script)
             PED.SET_PED_ARMOUR
         )
         if settings.headshot_pf then
-            PED.SET_PED_SUFFERS_CRITICAL_HITS(playerPed, 0)
+            PED.SET_PED_SUFFERS_CRITICAL_HITS(playerPed, false)
         end
         _frame = (_frame + 1) % _max_frame_count
     end
